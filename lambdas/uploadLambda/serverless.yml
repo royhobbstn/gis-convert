@@ -1,0 +1,29 @@
+service: fileUploaderService
+custom:
+  bucket: lambda-upload-gis-file
+provider:
+  name: aws
+  profile: admin
+  runtime: nodejs12.x
+  region: us-east-2
+  stackName: fileUploaderHome
+  apiGateway:
+    binaryMediaTypes:
+      - '*/*'
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 's3:PutObject'
+        - 's3:GetObject'
+      Resource:
+        - 'arn:aws:s3:::${self:custom.bucket}/*'
+functions:
+  UploadFileHome:
+    handler: handler.uploader
+    events:
+      - http:
+          path: upload
+          method: post
+          cors: true
+    environment:
+      Bucket: ${self:custom.bucket}
