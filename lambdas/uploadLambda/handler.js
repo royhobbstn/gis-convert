@@ -1,7 +1,7 @@
 //fileUploaderHome.js
 'use strict';
 const AWS = require('aws-sdk');
-const uuid = require('uuid/v4');
+const { v4: uuid } = require('uuid');
 const s3 = new AWS.S3();
 const formParser = require('./formParser');
 
