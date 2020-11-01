@@ -11,8 +11,6 @@ app.get('/', (req, res) => {
 });
 
 app.post('/upload-file', upload.single('file'), async (req, res) => {
-  console.log(req.file);
-
   const response = await uploader(req.file);
   return res.status(response.statusCode).json(response.body);
 });

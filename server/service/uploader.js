@@ -2,7 +2,10 @@
 'use strict';
 const AWS = require('aws-sdk');
 const { v4: uuid } = require('uuid');
-const s3 = new AWS.S3();
+const s3 = new AWS.S3({
+  signatureVersion: 'v4',
+  region: 'us-east-2',
+});
 
 const bucket = process.env.BUCKET;
 const MAX_SIZE = 10000000; // ~10MB
@@ -20,7 +23,7 @@ const uploadToS3 = (bucket, key, buffer, mimeType) =>
 
 exports.uploader = async file => {
   try {
-    console.log(file);
+    console.log({ file });
 
     const uid = uuid();
     const originalKey = `${uid}_${file.originalname}`;
@@ -30,7 +33,7 @@ exports.uploader = async file => {
     const signedOriginalUrl = s3.getSignedUrl('getObject', {
       Bucket: originalFile.Bucket,
       Key: originalKey,
-      Expires: 60000,
+      Expires: 60 * 60 * 8, // 8 hours
     });
     console.log({ signedOriginalUrl });
 
