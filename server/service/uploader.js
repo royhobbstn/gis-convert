@@ -7,6 +7,8 @@ const s3 = new AWS.S3({
   region: 'us-east-2',
 });
 
+console.log('loaded');
+
 const bucket = process.env.BUCKET;
 const MAX_SIZE = 10000000; // ~10MB
 

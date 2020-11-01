@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-
+import axios from 'axios';
 import { Button } from 'semantic-ui-react';
 
 import './App.css';
@@ -7,7 +7,7 @@ import './App.css';
 function App() {
   const fileUpload = useRef(null);
 
-  function uploadFile(evt) {
+  function chooseFile(evt) {
     let file = evt.target.files[0];
     console.log(file);
     if (!file || !file.name) {
@@ -18,6 +18,19 @@ function App() {
       window.alert('Please upload a file smaller than 10 MB');
       return false;
     }
+
+    const formData = new FormData();
+    formData.append('file', evt.target.files[0]);
+    axios
+      .put('/upload-file', formData, { headers: { 'content-type': 'multipart/form-data' } })
+      .then(data => {
+        console.log('file uploaded');
+        console.log(data);
+      })
+      .catch(e => {
+        console.log('error');
+        console.log(e);
+      });
   }
 
   return (
@@ -36,8 +49,7 @@ function App() {
         icon="file"
         onClick={() => fileUpload.current.click()}
       />
-
-      <input ref={fileUpload} type="file" hidden onChange={uploadFile} />
+      <input ref={fileUpload} type="file" hidden onChange={chooseFile} />
     </div>
   );
 }
