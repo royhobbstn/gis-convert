@@ -3,9 +3,8 @@
 const AWS = require('aws-sdk');
 const { v4: uuid } = require('uuid');
 const s3 = new AWS.S3();
-const formParser = require('./formParser');
 
-const bucket = process.env.Bucket;
+const bucket = process.env.BUCKET;
 const MAX_SIZE = 10000000; // ~10MB
 
 const uploadToS3 = (bucket, key, buffer, mimeType) =>
@@ -19,33 +18,35 @@ const uploadToS3 = (bucket, key, buffer, mimeType) =>
     });
   });
 
-module.exports.uploader = async event => {
+exports.uploader = async file => {
   try {
-    const formData = await formParser.parser(event, MAX_SIZE);
-    const file = formData.files[0];
+    console.log(file);
 
     const uid = uuid();
-    const originalKey = `${uid}_original_${file.filename}`;
-    const originalFile = await uploadToS3(bucket, originalKey, file.content, file.contentType);
+    const originalKey = `${uid}_${file.originalname}`;
+    const originalFile = await uploadToS3(bucket, originalKey, file.buffer, file.mimetype);
 
+    console.log({ originalFile });
     const signedOriginalUrl = s3.getSignedUrl('getObject', {
       Bucket: originalFile.Bucket,
       Key: originalKey,
       Expires: 60000,
     });
+    console.log({ signedOriginalUrl });
 
     return {
       statusCode: 200,
-      body: JSON.stringify({
+      body: {
         id: uid,
-        mimeType: file.contentType,
+        mimeType: file.mimetype,
         originalKey: originalFile.key,
         bucket: originalFile.Bucket,
-        fileName: file.filename,
+        fileName: originalKey,
         originalUrl: signedOriginalUrl,
-      }),
+      },
     };
   } catch (e) {
-    return { statusCode: 500, body: JSON.stringify(e.message) };
+    console.error(e);
+    return { statusCode: 500, body: { error: e.message } };
   }
 };
