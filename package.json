@@ -7,15 +7,18 @@
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
     "axios": "^0.21.0",
+    "config": "^3.3.2",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-scripts": "4.0.0",
     "semantic-ui-css": "^2.4.1",
     "semantic-ui-react": "^2.0.1",
+    "uuid": "^8.3.1",
     "web-vitals": "^0.2.4"
   },
   "scripts": {
-    "server": "BUCKET=lambda-upload-gis-file nodemon node server/index.js",
+    "server-dev": "NODE_ENV=development AWS_PROFILE=admin nodemon node server/index.js",
+    "server-prod": "NODE_ENV=production AWS_PROFILE=admin nodemon node server/index.js",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -53,7 +56,6 @@
     "prettier": "^2.1.2",
     "aws-sdk": "^2.783.0",
     "express": "^4.17.1",
-    "multer": "^1.4.2",
-    "uuid": "^8.3.1"
+    "multer": "^1.4.2"
   }
 }

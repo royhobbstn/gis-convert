@@ -1,0 +1,13 @@
+{
+  "env": "development",
+  "Dynamo": {
+    "table": "gis-convert-dev",
+    "endpoint": ""
+  },
+  "SQS": {
+    "mainQueueUrl": ""
+  },
+  "Buckets": {
+    "mainBucket": "upload-gis-file-dev"
+  }
+}

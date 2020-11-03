@@ -1,0 +1,13 @@
+{
+  "env": "",
+  "Dynamo": {
+    "table": "",
+    "endpoint": ""
+  },
+  "SQS": {
+    "mainQueueUrl": ""
+  },
+  "Buckets": {
+    "mainBucket": ""
+  }
+}
