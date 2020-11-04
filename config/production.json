@@ -1,11 +1,10 @@
 {
   "env": "production",
   "Dynamo": {
-    "table": "gis-convert",
-    "endpoint": ""
+    "table": "gis-convert"
   },
   "SQS": {
-    "mainQueueUrl": ""
+    "mainQueueUrl": "https://sqs.us-east-2.amazonaws.com/000009394762/processFile"
   },
   "Buckets": {
     "mainBucket": "upload-gis-file"

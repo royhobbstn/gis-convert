@@ -1,9 +1,18 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import axios from 'axios';
 import { Button } from 'semantic-ui-react';
 
-export function UploadControl({ updateUploads }) {
+export function UploadControl({ updateUploads, updateProducts }) {
   const fileUpload = useRef(null);
+
+  useEffect(() => {
+    async function fetchDynamoData() {
+      const token = window.localStorage.getItem('sessionId');
+      const response = await axios.get(`/data?token=${token}`);
+      updateUploads(response.data.sessionData.Items);
+    }
+    fetchDynamoData();
+  }, [updateUploads]);
 
   function chooseFile(evt) {
     let file = evt.target.files[0];
@@ -29,6 +38,8 @@ export function UploadControl({ updateUploads }) {
         initiateHeartbeat();
       })
       .catch(e => {
+        // send an error record to dynamo?
+
         console.log('error');
         console.log(e);
         alert('Unable to upload file!');
@@ -41,7 +52,8 @@ export function UploadControl({ updateUploads }) {
         style={{
           marginLeft: 'auto',
           marginRight: 'auto',
-          marginTop: '5%',
+          marginTop: '4%',
+          marginBottom: '4%',
           textAlign: 'center',
           display: 'block',
         }}

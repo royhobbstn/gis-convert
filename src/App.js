@@ -6,6 +6,7 @@ import { UploadControl } from './UploadControl';
 
 function App() {
   const [uploads, updateUploads] = useState([]);
+  const [products, updateProducts] = useState([]);
 
   return (
     <div className="App">
@@ -19,9 +20,9 @@ function App() {
       >
         Convert Geo Files
       </h1>
-      <UploadControl updateUploads={updateUploads} />
-      <UploadsTable data={uploads} />
-      <ProductsTable data={uploads} />
+      <UploadControl updateUploads={updateUploads} updateProducts={updateProducts} />
+      {uploads.length > 0 ? <UploadsTable data={uploads} /> : null}
+      {products.length > 0 ? <ProductsTable data={uploads} /> : null}
     </div>
   );
 }

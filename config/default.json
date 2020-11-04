@@ -1,8 +1,7 @@
 {
   "env": "",
   "Dynamo": {
-    "table": "",
-    "endpoint": ""
+    "table": ""
   },
   "SQS": {
     "mainQueueUrl": ""

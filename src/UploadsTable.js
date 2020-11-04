@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Icon } from 'semantic-ui-react';
+import { Table, Icon, Button } from 'semantic-ui-react';
 
 export function UploadsTable({ data }) {
   const rows = parseUploadsData(data);
@@ -15,8 +15,9 @@ export function UploadsTable({ data }) {
           <Table.HeaderCell></Table.HeaderCell>
           <Table.HeaderCell>Date</Table.HeaderCell>
           <Table.HeaderCell>File</Table.HeaderCell>
-          <Table.HeaderCell>Status</Table.HeaderCell>
-          <Table.HeaderCell>Info</Table.HeaderCell>
+          <Table.HeaderCell style={{ textAlign: 'center' }}>Status</Table.HeaderCell>
+          <Table.HeaderCell style={{ textAlign: 'center' }}>Convert</Table.HeaderCell>
+          <Table.HeaderCell style={{ textAlign: 'center' }}>Info</Table.HeaderCell>
           <Table.HeaderCell></Table.HeaderCell>
         </Table.Row>
       </Table.Header>
@@ -33,10 +34,27 @@ export function UploadsTable({ data }) {
               <Table.Cell>{new Date(Number(row.created)).toLocaleString()}</Table.Cell>
               <Table.Cell>{row.data.originalName}</Table.Cell>
               <Table.Cell>{row.status}</Table.Cell>
-              <Table.Cell>INFOTODO</Table.Cell>
+              <Table.Cell>{row.status === 'READY' ? <Button>Convert</Button> : null}</Table.Cell>
+              <Table.Cell>
+                {row.status === 'READY' ? (
+                  <div role="button" style={{ cursor: 'pointer' }}>
+                    <Icon
+                      style={{ color: 'red' }}
+                      fitted
+                      name="remove"
+                      onClick={() => deleteUpload(row.unique_id)}
+                    />
+                  </div>
+                ) : null}
+              </Table.Cell>
               <Table.Cell style={{ textAlign: 'center' }}>
                 <div role="button" style={{ cursor: 'pointer' }}>
-                  <Icon fitted name="remove" onClick={() => deleteUpload(row.unique_id)} />
+                  <Icon
+                    style={{ color: 'red' }}
+                    fitted
+                    name="remove"
+                    onClick={() => deleteUpload(row.unique_id)}
+                  />
                 </div>
               </Table.Cell>
             </Table.Row>
