@@ -4,6 +4,7 @@ AWS.config.update({ region: 'us-east-2' });
 const sqs = new AWS.SQS({ apiVersion: '2012-11-05' });
 
 exports.sendSQS = (payload, messageType) => {
+  console.log({ payload });
   const params = {
     MessageAttributes: {
       messageType: {

@@ -10,35 +10,37 @@ const docClient = new AWS.DynamoDB.DocumentClient();
 const TABLE = config.get('Dynamo.table');
 
 exports.createUploadRow = async function createUploadRow({ session_id, responseS3 }) {
-  const params = {
-    TableName: TABLE,
-    Item: {
-      session_id,
-      unique_id: uuid(),
-      row_type: 'upload',
-      created: Date.now(),
-      modified: Date.now(),
-      status: 'UPLOADING',
-      data: {
-        signedUrl: responseS3.signedOriginalUrl,
-        key: responseS3.originalFile.key,
-        bucket: responseS3.originalFile.bucket,
-        location: responseS3.originalFile.Location,
-        fileSize: responseS3.fileSize,
-        mimeType: responseS3.fileMimetype,
-        originalName: responseS3.fileOriginalName,
-        fileEncoding: responseS3.fileEncoding,
-      },
+  const item = {
+    session_id,
+    unique_id: uuid(),
+    row_type: 'upload',
+    created: Date.now(),
+    modified: Date.now(),
+    status: 'UPLOADING',
+    data: {
+      signedUrl: responseS3.signedOriginalUrl,
+      key: responseS3.originalFile.key,
+      bucket: responseS3.originalFile.bucket,
+      location: responseS3.originalFile.Location,
+      fileSize: responseS3.fileSize,
+      mimeType: responseS3.fileMimetype,
+      originalName: responseS3.fileOriginalName,
+      fileEncoding: responseS3.fileEncoding,
     },
   };
 
+  const params = {
+    TableName: TABLE,
+    Item: item,
+  };
+
   return new Promise((resolve, reject) => {
-    docClient.put(params, function (err, data) {
+    docClient.put(params, err => {
       if (err) {
         console.error('Unable to add item');
         return reject(err);
       } else {
-        return resolve(data);
+        return resolve(item);
       }
     });
   });
