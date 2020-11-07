@@ -1,55 +1,18 @@
 const { v4: uuid } = require('uuid');
 const AWS = require('aws-sdk');
 const config = require('config');
+const { status } = require('./constants.js');
 
 AWS.config.update({
   region: 'us-east-2',
 });
 
 const docClient = new AWS.DynamoDB.DocumentClient();
-const TABLE = config.get('Dynamo.table');
-
-exports.createUploadRow = async function createUploadRow({ session_id, responseS3 }) {
-  const item = {
-    session_id,
-    unique_id: uuid(),
-    row_type: 'upload',
-    created: Date.now(),
-    modified: Date.now(),
-    status: 'UPLOADING',
-    data: {
-      signedUrl: responseS3.signedOriginalUrl,
-      key: responseS3.originalFile.key,
-      bucket: responseS3.originalFile.bucket,
-      location: responseS3.originalFile.Location,
-      fileSize: responseS3.fileSize,
-      mimeType: responseS3.fileMimetype,
-      originalName: responseS3.fileOriginalName,
-      fileEncoding: responseS3.fileEncoding,
-    },
-  };
-
-  const params = {
-    TableName: TABLE,
-    Item: item,
-  };
-
-  return new Promise((resolve, reject) => {
-    docClient.put(params, err => {
-      if (err) {
-        console.error('Unable to add item');
-        return reject(err);
-      } else {
-        return resolve(item);
-      }
-    });
-  });
-};
 
 // return all rows by session_id
-exports.sessionIdQuery = session_id => {
+exports.sessionIdQuery = (table, session_id) => {
   return new Promise((resolve, reject) => {
-    var params = {
+    const params = {
       TableName: TABLE,
       KeyConditionExpression: 'session_id = :hkey',
       ExpressionAttributeValues: {
@@ -66,6 +29,39 @@ exports.sessionIdQuery = session_id => {
   });
 };
 
-// create info row
+exports.fetchDynamoRecord = function (table, sessionId, uniqueId) {
+  return new Promise((resolve, reject) => {
+    const params = {
+      TableName: TABLE,
+      KeyConditionExpression: 'session_id = :hkey and unique_id = :rkey',
+      ExpressionAttributeValues: {
+        ':hkey': sessionId,
+        ':rkey': uniqueId,
+      },
+    };
 
-// create product row
+    docClient.query(params, function (err, data) {
+      if (err) {
+        return reject(err);
+      }
+      return resolve(data);
+    });
+  });
+};
+
+exports.putDynamoRecord = async function (table, record) {
+  return new Promise((resolve, reject) => {
+    docClient.put(
+      {
+        Item: record,
+        TableName: TABLE,
+      },
+      (err, data) => {
+        if (err) {
+          return reject(err);
+        }
+        return resolve(data);
+      },
+    );
+  });
+};
