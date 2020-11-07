@@ -7,11 +7,9 @@ const { downloadFileFromS3 } = require('./s3.js');
 const { findLikelyFile, getOgrInfo, parseOgrOutput } = require('./ogrInfo.js');
 const { fetchDynamoRecord, putDynamoRecord } = require('./dynamo.js');
 const TABLE = config.get('Dynamo.table');
+const BUCKET = config.get('Buckets.mainBucket');
 
 exports.processMessage = async incomingPayload => {
-  console.log('processing');
-  console.log(incomingPayload);
-
   const message = incomingPayload.Messages[0];
   const attributes = message.MessageAttributes;
   const messageType = attributes.messageType.StringValue;
@@ -20,8 +18,6 @@ exports.processMessage = async incomingPayload => {
 
   const workingFolder = tempFolder + folderId;
   mkdirp.sync(workingFolder);
-
-  console.log({ attributes, body, workingFolder });
 
   if (messageType === 'info') {
     await processGeoFileInfo(workingFolder, body);
@@ -39,9 +35,6 @@ async function processGeoFileInfo(workingFolder, body) {
 
   // fetch DYNAMO record
   const response = await fetchDynamoRecord(TABLE, sessionId, uniqueId);
-  console.log('response');
-  console.log(response);
-
   const record = response.Items[0];
 
   // update status in Dynamo from Uploaded to SCANNING
@@ -49,7 +42,7 @@ async function processGeoFileInfo(workingFolder, body) {
   await putDynamoRecord(TABLE, record);
 
   // load file from S3
-  await downloadFileFromS3(config.get('Buckets.mainBucket'), key, workingFolder);
+  await downloadFileFromS3(BUCKET, key, workingFolder);
 
   // extract file down from zip if needed.
   const lastFourChars = key.slice(-4);
@@ -65,12 +58,11 @@ async function processGeoFileInfo(workingFolder, body) {
 
   // parseOgrInfo into JSON.
   const layers = parseOgrOutput(ogrOutput);
-  console.log(layers);
 
   // Save Info to Dynamo and update status (use same JSON as earlier to avoid re-calling)
   record.info = layers;
   record.status = status.READY;
-  await putDynamoRecord(tABLE, record);
+  await putDynamoRecord(TABLE, record);
 }
 
 async function processGeoFileConversion() {

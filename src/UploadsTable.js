@@ -1,67 +1,80 @@
 import React from 'react';
 import { Table, Icon, Button } from 'semantic-ui-react';
+import axios from 'axios';
 
-export function UploadsTable({ data }) {
+export function UploadsTable({ data, updateUploads }) {
   const rows = parseUploadsData(data);
 
-  function deleteUpload() {
-    console.log('deletetodo');
+  console.log({ rows });
+
+  function deleteUpload(unique_id, key) {
+    const token = window.localStorage.getItem('sessionId');
+    axios
+      .delete(`/delete-upload?token=${token}&unique=${unique_id}&key=${key}`)
+      .then(response => {
+        // response is all records with current sessionId
+        console.log(response);
+        updateUploads(response.data.sessionData.Items);
+      })
+      .catch(e => {
+        console.log('error');
+        console.log(e);
+        alert('Unable to delete upload!');
+      });
   }
 
   return (
-    <Table unstackable celled compact style={{ maxWidth: '800px', margin: 'auto' }}>
-      <Table.Header>
-        <Table.Row>
-          <Table.HeaderCell></Table.HeaderCell>
-          <Table.HeaderCell>Date</Table.HeaderCell>
-          <Table.HeaderCell>File</Table.HeaderCell>
-          <Table.HeaderCell style={{ textAlign: 'center' }}>Status</Table.HeaderCell>
-          <Table.HeaderCell style={{ textAlign: 'center' }}>Convert</Table.HeaderCell>
-          <Table.HeaderCell style={{ textAlign: 'center' }}>Info</Table.HeaderCell>
-          <Table.HeaderCell></Table.HeaderCell>
-        </Table.Row>
-      </Table.Header>
+    <div>
+      <p style={{ maxWidth: '800px', margin: 'auto', fontWeight: 'bold' }}>Uploads</p>
+      <Table unstackable celled compact style={{ maxWidth: '800px', margin: 'auto' }}>
+        <Table.Header>
+          <Table.Row>
+            <Table.HeaderCell></Table.HeaderCell>
+            <Table.HeaderCell>Date</Table.HeaderCell>
+            <Table.HeaderCell>File</Table.HeaderCell>
+            <Table.HeaderCell style={{ textAlign: 'center' }}>Status</Table.HeaderCell>
+            <Table.HeaderCell style={{ textAlign: 'center' }}>Convert</Table.HeaderCell>
+            <Table.HeaderCell style={{ textAlign: 'center' }}>Info</Table.HeaderCell>
+            <Table.HeaderCell></Table.HeaderCell>
+          </Table.Row>
+        </Table.Header>
 
-      <Table.Body>
-        {rows.map(row => {
-          return (
-            <Table.Row key={row.unique_id}>
-              <Table.Cell style={{ textAlign: 'center' }}>
-                <a href={row.data.signedUrl} target="_blank" rel="noreferrer">
-                  <Icon fitted name="linkify" />
-                </a>
-              </Table.Cell>
-              <Table.Cell>{new Date(Number(row.created)).toLocaleString()}</Table.Cell>
-              <Table.Cell>{row.data.originalName}</Table.Cell>
-              <Table.Cell>{row.status}</Table.Cell>
-              <Table.Cell>{row.status === 'READY' ? <Button>Convert</Button> : null}</Table.Cell>
-              <Table.Cell>
-                {row.status === 'READY' ? (
-                  <div role="button" style={{ cursor: 'pointer' }}>
-                    <Icon
-                      style={{ color: 'red' }}
-                      fitted
-                      name="remove"
-                      onClick={() => deleteUpload(row.unique_id)}
-                    />
-                  </div>
-                ) : null}
-              </Table.Cell>
-              <Table.Cell style={{ textAlign: 'center' }}>
-                <div role="button" style={{ cursor: 'pointer' }}>
-                  <Icon
-                    style={{ color: 'red' }}
-                    fitted
-                    name="remove"
-                    onClick={() => deleteUpload(row.unique_id)}
-                  />
-                </div>
-              </Table.Cell>
-            </Table.Row>
-          );
-        })}
-      </Table.Body>
-    </Table>
+        <Table.Body>
+          {rows.map(row => {
+            return (
+              <Table.Row key={row.unique_id}>
+                <Table.Cell style={{ textAlign: 'center' }}>
+                  <a href={row.data.signedUrl} target="_blank" rel="noreferrer">
+                    <Icon fitted name="linkify" />
+                  </a>
+                </Table.Cell>
+                <Table.Cell>{new Date(Number(row.created)).toLocaleString()}</Table.Cell>
+                <Table.Cell>{row.data.originalName}</Table.Cell>
+                <Table.Cell>{row.status}</Table.Cell>
+                <Table.Cell style={{ textAlign: 'center' }}>
+                  {row.status === 'READY' ? <Button>Convert</Button> : null}
+                </Table.Cell>
+                <Table.Cell style={{ textAlign: 'center' }}>
+                  {row.status === 'READY' ? <Button>Info</Button> : null}
+                </Table.Cell>
+                <Table.Cell style={{ textAlign: 'center' }}>
+                  {row.status === 'READY' ? (
+                    <div role="button" style={{ cursor: 'pointer' }}>
+                      <Icon
+                        style={{ color: 'red' }}
+                        fitted
+                        name="remove"
+                        onClick={() => deleteUpload(row.unique_id, row.data.key)}
+                      />
+                    </div>
+                  ) : null}
+                </Table.Cell>
+              </Table.Row>
+            );
+          })}
+        </Table.Body>
+      </Table>
+    </div>
   );
 }
 

@@ -8,13 +8,16 @@ const { v4: uuid } = require('uuid');
 const { status } = require('./service/constants.js');
 
 const { uploader } = require('./service/uploader');
-const { putDynamoRecord, sessionIdQuery } = require('./service/dynamo');
+const { putDynamoRecord, sessionIdQuery, deleteDynamoRecord } = require('./service/dynamo');
 const { sendSQS, readMessage, deleteMessage } = require('./service/sqs');
 const { processMessage } = require('./service/worker');
+const { deleteS3File } = require('./service/s3.js');
 
 const app = express();
 const port = 4000;
 const TABLE = config.get('Dynamo.table');
+const QUEUE = config.get('SQS.mainQueueUrl');
+const BUCKET = config.get('Buckets.mainBucket');
 
 app.use(bodyParser.json());
 
@@ -27,7 +30,7 @@ setInterval(async () => {
   }
 
   try {
-    const message = await readMessage();
+    const message = await readMessage(QUEUE);
     if (!message) {
       return;
     }
@@ -36,7 +39,7 @@ setInterval(async () => {
     await processMessage(message);
     const deleteParams = {
       ReceiptHandle: message.Messages[0].ReceiptHandle,
-      QueueUrl: config.get('SQS.mainQueueUrl'),
+      QueueUrl: QUEUE,
     };
     await deleteMessage(deleteParams);
   } catch (e) {
@@ -87,7 +90,7 @@ app.put('/upload-file', upload.single('file'), async (req, res) => {
       fileEncoding: responseS3.fileEncoding,
     };
     await putDynamoRecord(TABLE, record);
-    await sendSQS({ session_id, unique_id, key: record.data.key }, 'info');
+    await sendSQS(QUEUE, { session_id, unique_id, key: record.data.key }, 'info');
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: e.message });
@@ -101,6 +104,31 @@ app.get('/data', async (req, res) => {
   }
   const sessionData = await sessionIdQuery(TABLE, session_id);
   return res.status(200).json({ sessionData });
+});
+
+app.delete('/delete-upload', async (req, res) => {
+  const session_id = req.query.token;
+  const unique_id = req.query.unique;
+  const key = req.query.key;
+  if (!session_id || !unique_id || !key) {
+    return res.status(500).json({ error: 'parameter(s) missing' });
+  }
+
+  console.log({ session_id, unique_id, key });
+
+  try {
+    // delete upload dynamo record
+    await deleteDynamoRecord(TABLE, session_id, unique_id);
+
+    // delete upload s3 file
+    await deleteS3File(BUCKET, key);
+
+    // query sessionId records and return them
+    const sessionData = await sessionIdQuery(TABLE, session_id);
+    return res.status(200).json({ sessionData });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(port, () => {

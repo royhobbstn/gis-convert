@@ -9,6 +9,7 @@ export function UploadControl({ updateUploads, updateProducts }) {
     async function fetchDynamoData() {
       const token = window.localStorage.getItem('sessionId');
       const response = await axios.get(`/data?token=${token}`);
+      console.log(response);
       updateUploads(response.data.sessionData.Items);
     }
     fetchDynamoData();
@@ -52,7 +53,7 @@ export function UploadControl({ updateUploads, updateProducts }) {
         style={{
           marginLeft: 'auto',
           marginRight: 'auto',
-          marginTop: '4%',
+          marginTop: '2%',
           marginBottom: '4%',
           textAlign: 'center',
           display: 'block',

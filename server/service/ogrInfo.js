@@ -4,8 +4,6 @@ const spawn = require('child_process').spawn;
 exports.findLikelyFile = workingFolder => {
   const arrayOfFiles = fs.readdirSync(workingFolder, { withFileTypes: true }); // TODO avoid blocking in server environment
 
-  console.log('unzipped directory files', { arrayOfFiles });
-
   const filteredFiles = [];
 
   // first check for .gdb directory or .shp
@@ -58,7 +56,7 @@ exports.getOgrInfo = filePath => {
     });
 
     proc.stderr.on('data', data => {
-      console.log(data.toString());
+      // console.log(data.toString());
     });
 
     proc.on('error', err => {
@@ -68,8 +66,8 @@ exports.getOgrInfo = filePath => {
 
     proc.on('close', code => {
       console.log(`completed gathering ogrinfo.`);
-      console.log('command', { command });
-      console.log('ogrinfo', { textOutput });
+      //   console.log('command', { command });
+      //   console.log('ogrinfo', { textOutput });
       return resolve(textOutput);
     });
   });

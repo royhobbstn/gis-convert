@@ -1,7 +1,4 @@
-const { v4: uuid } = require('uuid');
 const AWS = require('aws-sdk');
-const config = require('config');
-const { status } = require('./constants.js');
 
 AWS.config.update({
   region: 'us-east-2',
@@ -13,14 +10,14 @@ const docClient = new AWS.DynamoDB.DocumentClient();
 exports.sessionIdQuery = (table, session_id) => {
   return new Promise((resolve, reject) => {
     const params = {
-      TableName: TABLE,
+      TableName: table,
       KeyConditionExpression: 'session_id = :hkey',
       ExpressionAttributeValues: {
         ':hkey': session_id,
       },
     };
 
-    docClient.query(params, function (err, data) {
+    docClient.query(params, (err, data) => {
       if (err) {
         return reject(err);
       }
@@ -29,10 +26,10 @@ exports.sessionIdQuery = (table, session_id) => {
   });
 };
 
-exports.fetchDynamoRecord = function (table, sessionId, uniqueId) {
+exports.fetchDynamoRecord = (table, sessionId, uniqueId) => {
   return new Promise((resolve, reject) => {
     const params = {
-      TableName: TABLE,
+      TableName: table,
       KeyConditionExpression: 'session_id = :hkey and unique_id = :rkey',
       ExpressionAttributeValues: {
         ':hkey': sessionId,
@@ -40,7 +37,7 @@ exports.fetchDynamoRecord = function (table, sessionId, uniqueId) {
       },
     };
 
-    docClient.query(params, function (err, data) {
+    docClient.query(params, (err, data) => {
       if (err) {
         return reject(err);
       }
@@ -49,19 +46,39 @@ exports.fetchDynamoRecord = function (table, sessionId, uniqueId) {
   });
 };
 
-exports.putDynamoRecord = async function (table, record) {
+exports.putDynamoRecord = (table, record) => {
   return new Promise((resolve, reject) => {
-    docClient.put(
-      {
-        Item: record,
-        TableName: TABLE,
+    const params = {
+      Item: record,
+      TableName: table,
+    };
+    docClient.put(params, (err, data) => {
+      if (err) {
+        return reject(err);
+      }
+      return resolve(data);
+    });
+  });
+};
+
+exports.deleteDynamoRecord = (table, sessionId, uniqueId) => {
+  return new Promise((resolve, reject) => {
+    const params = {
+      TableName: table,
+      Key: {
+        session_id: sessionId,
+        unique_id: uniqueId,
       },
-      (err, data) => {
-        if (err) {
-          return reject(err);
-        }
-        return resolve(data);
-      },
-    );
+    };
+
+    docClient.delete(params, (err, data) => {
+      if (err) {
+        console.log(err);
+        console.log('failed to delete dynamo record');
+        return reject(err);
+      }
+      console.log('deleted dynamo record');
+      return resolve(data);
+    });
   });
 };

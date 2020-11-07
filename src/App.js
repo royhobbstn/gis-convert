@@ -14,14 +14,14 @@ function App() {
         style={{
           marginLeft: 'auto',
           marginRight: 'auto',
-          marginTop: '8%',
+          paddingTop: '3%',
           textAlign: 'center',
         }}
       >
         Convert Geo Files
       </h1>
       <UploadControl updateUploads={updateUploads} updateProducts={updateProducts} />
-      {uploads.length > 0 ? <UploadsTable data={uploads} /> : null}
+      {uploads.length > 0 ? <UploadsTable data={uploads} updateUploads={updateUploads} /> : null}
       {products.length > 0 ? <ProductsTable data={uploads} /> : null}
     </div>
   );

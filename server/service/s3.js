@@ -22,3 +22,23 @@ exports.downloadFileFromS3 = (bucket, key, outputPath) => {
     });
   });
 };
+
+exports.deleteS3File = (bucket, key) => {
+  return new Promise((resolve, reject) => {
+    S3.deleteObject(
+      {
+        Bucket: bucket,
+        Key: key,
+      },
+      (err, data) => {
+        if (err) {
+          console.log('delete failed');
+          return reject(err);
+        }
+        console.log('delete succeeded');
+        console.log(data);
+        return resolve(data);
+      },
+    );
+  });
+};
