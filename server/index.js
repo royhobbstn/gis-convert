@@ -67,7 +67,9 @@ app.put('/upload-file', upload.single('file'), async (req, res) => {
       created: Date.now(),
       modified: Date.now(),
       status: status.UPLOADING,
-      data: {},
+      data: {
+        originalName: req.file.originalname,
+      },
     };
 
     await putDynamoRecord(TABLE, record);

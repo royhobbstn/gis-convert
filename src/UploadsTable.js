@@ -1,19 +1,26 @@
 import React from 'react';
 import { Table, Icon, Button } from 'semantic-ui-react';
 import axios from 'axios';
+import InfoModal from './InfoModal';
 
 export function UploadsTable({ data, updateUploads }) {
+  const [infoModalOpen, updateInfoModalOpen] = React.useState(false);
+  const [infoModalInfo, updateInfoModalInfo] = React.useState([]);
+  const [rowsBeingDeleted, updateRowsBeingDeleted] = React.useState([]);
+
   const rows = parseUploadsData(data);
 
   console.log({ rows });
 
   function deleteUpload(unique_id, key) {
+    updateRowsBeingDeleted([...rowsBeingDeleted, unique_id]);
     const token = window.localStorage.getItem('sessionId');
     axios
       .delete(`/delete-upload?token=${token}&unique=${unique_id}&key=${key}`)
       .then(response => {
         // response is all records with current sessionId
         console.log(response);
+        updateRowsBeingDeleted(rowsBeingDeleted.filter(row => row.unique_id !== unique_id));
         updateUploads(response.data.sessionData.Items);
       })
       .catch(e => {
@@ -23,11 +30,33 @@ export function UploadsTable({ data, updateUploads }) {
       });
   }
 
+  function updateInfoModal(info) {
+    updateInfoModalInfo(info);
+    updateInfoModalOpen(true);
+  }
+
   return (
-    <div>
+    <React.Fragment>
+      <InfoModal
+        infoModalOpen={infoModalOpen}
+        infoModalInfo={infoModalInfo}
+        updateInfoModalOpen={updateInfoModalOpen}
+      />
       <p style={{ maxWidth: '800px', margin: 'auto', fontWeight: 'bold' }}>Uploads</p>
-      <Table unstackable celled compact style={{ maxWidth: '800px', margin: 'auto' }}>
-        <Table.Header>
+      <Table
+        unstackable
+        celled
+        compact
+        style={{
+          display: 'block',
+          maxWidth: '800px',
+          margin: 'auto',
+          maxHeight: '250px',
+          overflow: 'auto',
+          marginBottom: '20px',
+        }}
+      >
+        <Table.Header style={{ position: 'sticky' }}>
           <Table.Row>
             <Table.HeaderCell></Table.HeaderCell>
             <Table.HeaderCell>Date</Table.HeaderCell>
@@ -43,29 +72,37 @@ export function UploadsTable({ data, updateUploads }) {
           {rows.map(row => {
             return (
               <Table.Row key={row.unique_id}>
-                <Table.Cell style={{ textAlign: 'center' }}>
+                <Table.Cell width={1} style={{ textAlign: 'center' }}>
                   <a href={row.data.signedUrl} target="_blank" rel="noreferrer">
                     <Icon fitted name="linkify" />
                   </a>
                 </Table.Cell>
-                <Table.Cell>{new Date(Number(row.created)).toLocaleString()}</Table.Cell>
-                <Table.Cell>{row.data.originalName}</Table.Cell>
-                <Table.Cell>{row.status}</Table.Cell>
-                <Table.Cell style={{ textAlign: 'center' }}>
-                  {row.status === 'READY' ? <Button>Convert</Button> : null}
+                <Table.Cell width={4}>{new Date(Number(row.created)).toLocaleString()}</Table.Cell>
+                <Table.Cell width={5}>{row.data.originalName}</Table.Cell>
+                <Table.Cell width={1}>{row.status}</Table.Cell>
+                <Table.Cell width={2} style={{ textAlign: 'center' }}>
+                  {row.status === 'READY' ? <Button compact>Convert</Button> : null}
                 </Table.Cell>
-                <Table.Cell style={{ textAlign: 'center' }}>
-                  {row.status === 'READY' ? <Button>Info</Button> : null}
+                <Table.Cell width={2} style={{ textAlign: 'center' }}>
+                  {row.status === 'READY' ? (
+                    <Button compact onClick={() => updateInfoModal(row.info)}>
+                      Info
+                    </Button>
+                  ) : null}
                 </Table.Cell>
-                <Table.Cell style={{ textAlign: 'center' }}>
+                <Table.Cell width={1} style={{ textAlign: 'center' }}>
                   {row.status === 'READY' ? (
                     <div role="button" style={{ cursor: 'pointer' }}>
-                      <Icon
-                        style={{ color: 'red' }}
-                        fitted
-                        name="remove"
-                        onClick={() => deleteUpload(row.unique_id, row.data.key)}
-                      />
+                      {rowsBeingDeleted.includes(row.unique_id) ? (
+                        <Icon style={{ color: 'black' }} loading fitted name="spinner" />
+                      ) : (
+                        <Icon
+                          style={{ color: 'red' }}
+                          fitted
+                          name="remove"
+                          onClick={() => deleteUpload(row.unique_id, row.data.key)}
+                        />
+                      )}
                     </div>
                   ) : null}
                 </Table.Cell>
@@ -74,26 +111,16 @@ export function UploadsTable({ data, updateUploads }) {
           })}
         </Table.Body>
       </Table>
-    </div>
+    </React.Fragment>
   );
 }
 
 function parseUploadsData(data) {
-  return data;
+  const filtered = [...data].filter(item => {
+    return item.row_type === 'upload';
+  });
+  filtered.sort((a, b) => {
+    return b.created - a.created;
+  });
+  return filtered;
 }
-
-// created: 1604404452113
-// data:
-// fileEncoding: "7bit"
-// fileSize: 449
-// key: "390f48af-0522-4c82-b03c-a9aad294b7db_zeytech"
-// location: "https://upload-gis-file-dev.s3.us-east-2.amazonaws.com/390f48af-0522-4c82-b03c-a9aad294b7db_zeytech"
-// mimeType: "application/octet-stream"
-// originalName: "zeytech"
-// signedUrl: "https://upload-gis-file-dev.s3.us-east-2.amazonaws.com/390f48af-0522-4c82-b03c-a9aad294b7db_zeytech?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQAAEPLJFM5T2QSTI%2F20201103%2Fus-east-2%2Fs3%2Faws4_request&X-Amz-Date=20201103T115412Z&X-Amz-Expires=28800&X-Amz-Signature=cdb4ba2cd7040614d7b5e88a582ea25306bddf61d1478270c08867643ffa9320&X-Amz-SignedHeaders=host"
-// __proto__: Object
-// modified: 1604404452113
-// row_type: "upload"
-// session_id: "2b52e404-efa3-400f-85df-da663af35b71"
-// status: "UPLOADING"
-// unique_id:
