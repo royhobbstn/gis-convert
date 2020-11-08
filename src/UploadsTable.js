@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Table, Icon, Button } from 'semantic-ui-react';
 import axios from 'axios';
 import InfoModal from './InfoModal';
+import ConvertModal from './ConvertModal';
 
 export function UploadsTable({ data, updateUploads }) {
-  const [infoModalOpen, updateInfoModalOpen] = React.useState(false);
-  const [infoModalInfo, updateInfoModalInfo] = React.useState([]);
-  const [rowsBeingDeleted, updateRowsBeingDeleted] = React.useState([]);
+  const [infoModalOpen, updateInfoModalOpen] = useState(false);
+  const [infoModalInfo, updateInfoModalInfo] = useState([]);
+  const [rowsBeingDeleted, updateRowsBeingDeleted] = useState([]);
+  const [convertModalInfo, updateConvertModalInfo] = useState({});
+  const [convertModalOpen, updateConvertModalOpen] = useState(false);
 
   const rows = parseUploadsData(data);
 
@@ -35,12 +38,22 @@ export function UploadsTable({ data, updateUploads }) {
     updateInfoModalOpen(true);
   }
 
+  function convertUpload(row) {
+    updateConvertModalInfo(row);
+    updateConvertModalOpen(true);
+  }
+
   return (
     <React.Fragment>
       <InfoModal
         infoModalOpen={infoModalOpen}
         infoModalInfo={infoModalInfo}
         updateInfoModalOpen={updateInfoModalOpen}
+      />
+      <ConvertModal
+        convertModalOpen={convertModalOpen}
+        convertModalInfo={convertModalInfo}
+        updateConvertModalOpen={updateConvertModalOpen}
       />
       <p style={{ maxWidth: '800px', margin: 'auto', fontWeight: 'bold' }}>Uploads</p>
       <Table
@@ -81,7 +94,11 @@ export function UploadsTable({ data, updateUploads }) {
                 <Table.Cell width={5}>{row.data.originalName}</Table.Cell>
                 <Table.Cell width={1}>{row.status}</Table.Cell>
                 <Table.Cell width={2} style={{ textAlign: 'center' }}>
-                  {row.status === 'READY' ? <Button compact>Convert</Button> : null}
+                  {row.status === 'READY' ? (
+                    <Button compact onClick={() => convertUpload(row)}>
+                      Convert
+                    </Button>
+                  ) : null}
                 </Table.Cell>
                 <Table.Cell width={2} style={{ textAlign: 'center' }}>
                   {row.status === 'READY' ? (
