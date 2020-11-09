@@ -8,3 +8,8 @@ exports.status = {
   SCANNING: 'SCANNING ',
   READY: 'READY',
 };
+
+exports.messageTypes = {
+  INFO: 'info',
+  CONVERT: 'convert',
+};

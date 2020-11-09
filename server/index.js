@@ -133,6 +133,15 @@ app.delete('/delete-upload', async (req, res) => {
   }
 });
 
+app.post('/initiateConversion', (req, res) => {
+  const layersValue = req.body.layersValue;
+  const typeValue = req.body.typeValue;
+
+  console.log({ layersValue, typeValue });
+
+  res.status(200).json({ ok: 'ok' });
+});
+
 app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`);
 });

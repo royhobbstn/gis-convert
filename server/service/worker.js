@@ -1,5 +1,5 @@
 const config = require('config');
-const { tempFolder, status } = require('./constants.js');
+const { tempFolder, status, messageTypes } = require('./constants.js');
 const { v4: uuid } = require('uuid');
 const mkdirp = require('mkdirp');
 const { extractZip, collapseUnzippedDir } = require('./filesystem.js');
@@ -19,9 +19,9 @@ exports.processMessage = async incomingPayload => {
   const workingFolder = tempFolder + folderId;
   mkdirp.sync(workingFolder);
 
-  if (messageType === 'info') {
+  if (messageType === messageTypes.INFO) {
     await processGeoFileInfo(workingFolder, body);
-  } else if (messageType === 'convert') {
+  } else if (messageType === messageTypes.CONVERT) {
     await processGeoFileConversion(body);
   } else {
     throw new Error(`Unexpected MessageType: ${messageType}`);
@@ -47,6 +47,7 @@ async function processGeoFileInfo(workingFolder, body) {
   // extract file down from zip if needed.
   const lastFourChars = key.slice(-4);
   let likelyFile = workingFolder + key;
+  // A BIG TODO: use /vsizip/ and /vsis3/ in place of below
   if (lastFourChars === '.zip') {
     extractZip(workingFolder, key);
     collapseUnzippedDir(workingFolder);
