@@ -1,5 +1,5 @@
 const config = require('config');
-const { tempFolder, status, messageTypes } = require('./constants.js');
+const { tempFolder, uploadStatus, messageTypes } = require('./constants.js');
 const { v4: uuid } = require('uuid');
 const mkdirp = require('mkdirp');
 const { extractZip, collapseUnzippedDir } = require('./filesystem.js');
@@ -38,7 +38,7 @@ async function processGeoFileInfo(workingFolder, body) {
   const record = response.Items[0];
 
   // update status in Dynamo from Uploaded to SCANNING
-  record.status = status.SCANNING;
+  record.status = uploadStatus.SCANNING;
   await putDynamoRecord(TABLE, record);
 
   // load file from S3
@@ -62,7 +62,7 @@ async function processGeoFileInfo(workingFolder, body) {
 
   // Save Info to Dynamo and update status (use same JSON as earlier to avoid re-calling)
   record.info = layers;
-  record.status = status.READY;
+  record.status = uploadStatus.READY;
   await putDynamoRecord(TABLE, record);
 }
 

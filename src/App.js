@@ -5,8 +5,9 @@ import { ProductsTable } from './ProductsTable';
 import { UploadControl } from './UploadControl';
 
 function App() {
-  const [uploads, updateUploads] = useState([]);
-  const [products, updateProducts] = useState([]);
+  const [data, updateData] = useState([]);
+
+  const [uploads, products] = parseData(data);
 
   return (
     <div className="App">
@@ -20,11 +21,35 @@ function App() {
       >
         Convert Geo Files
       </h1>
-      <UploadControl updateUploads={updateUploads} updateProducts={updateProducts} />
-      {uploads.length > 0 ? <UploadsTable data={uploads} updateUploads={updateUploads} /> : null}
-      {products.length > 0 ? <ProductsTable data={uploads} /> : null}
+      <UploadControl updateData={updateData} />
+      {uploads.length > 0 ? <UploadsTable data={uploads} updateData={updateData} /> : null}
+      {products.length > 0 ? <ProductsTable data={products} updateData={updateData} /> : null}
     </div>
   );
 }
 
 export default App;
+
+function parseData(data) {
+  console.log({ data });
+  const sortedData = [...data].sort((a, b) => {
+    return b.created - a.created;
+  });
+
+  console.log({ sortedData });
+
+  const uploads = [];
+  const products = [];
+
+  for (let item of sortedData) {
+    if (item.row_type === 'upload') {
+      uploads.push(item);
+    } else if (item.row_type === 'product') {
+      products.push(item);
+    } else {
+      console.error('unexpected row_type');
+    }
+  }
+
+  return [uploads, products];
+}

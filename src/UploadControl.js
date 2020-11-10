@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import axios from 'axios';
 import { Button } from 'semantic-ui-react';
 
-export function UploadControl({ updateUploads, updateProducts }) {
+export function UploadControl({ updateData }) {
   const fileUpload = useRef(null);
 
   useEffect(() => {
@@ -10,10 +10,10 @@ export function UploadControl({ updateUploads, updateProducts }) {
       const token = window.localStorage.getItem('sessionId');
       const response = await axios.get(`/data?token=${token}`);
       console.log(response);
-      updateUploads(response.data.sessionData.Items);
+      updateData(response.data.sessionData.Items);
     }
     fetchDynamoData();
-  }, [updateUploads]);
+  }, [updateData]);
 
   function chooseFile(evt) {
     let file = evt.target.files[0];
@@ -35,7 +35,7 @@ export function UploadControl({ updateUploads, updateProducts }) {
       .then(response => {
         console.log(response);
         // response is all records with current sessionId
-        updateUploads(response.data.sessionData.Items);
+        updateData(response.data.sessionData.Items);
         initiateHeartbeat();
       })
       .catch(e => {

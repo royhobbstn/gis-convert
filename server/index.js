@@ -5,7 +5,7 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 const { v4: uuid } = require('uuid');
-const { status } = require('./service/constants.js');
+const { uploadStatus, productStatus, rowTypes } = require('./service/constants.js');
 
 const { uploader } = require('./service/uploader');
 const { putDynamoRecord, sessionIdQuery, deleteDynamoRecord } = require('./service/dynamo');
@@ -63,10 +63,10 @@ app.put('/upload-file', upload.single('file'), async (req, res) => {
     const record = {
       session_id,
       unique_id,
-      row_type: 'upload',
+      row_type: rowTypes.UPLOAD,
       created: Date.now(),
       modified: Date.now(),
-      status: status.UPLOADING,
+      status: uploadStatus.UPLOADING,
       data: {
         originalName: req.file.originalname,
       },
@@ -80,7 +80,7 @@ app.put('/upload-file', upload.single('file'), async (req, res) => {
 
     const responseS3 = await uploader(req.file);
 
-    record.status = status.UPLOADED;
+    record.status = uploadStatus.UPLOADED;
     record.data = {
       signedUrl: responseS3.signedOriginalUrl,
       key: responseS3.originalFile.key,
@@ -133,13 +133,39 @@ app.delete('/delete-upload', async (req, res) => {
   }
 });
 
-app.post('/initiateConversion', (req, res) => {
+app.post('/initiateConversion', async (req, res) => {
   const layersValue = req.body.layersValue;
   const typeValue = req.body.typeValue;
+  const uploadRow = req.body.uploadRow;
+  const session_id = req.body.sessionId;
 
-  console.log({ layersValue, typeValue });
+  console.log({ layersValue, typeValue, uploadRow, session_id });
 
-  res.status(200).json({ ok: 'ok' });
+  const unique_id = uuid();
+
+  // create dynamo product record
+  const record = {
+    session_id,
+    unique_id,
+    row_type: rowTypes.PRODUCT,
+    created: Date.now(),
+    modified: Date.now(),
+    status: productStatus.WAITING,
+    data: {
+      originalName: uploadRow.data.originalName,
+      layersValue,
+      typeValue,
+    },
+  };
+
+  await putDynamoRecord(TABLE, record);
+
+  // send SQS to conversion worker
+  // TODO
+
+  // query sessionId records and return them
+  const sessionData = await sessionIdQuery(TABLE, session_id);
+  return res.status(200).json({ sessionData });
 });
 
 app.listen(port, () => {

@@ -14,7 +14,12 @@ export function ConvertModal({ convertModalOpen, updateConvertModalOpen, convert
     updateSpinnerIsVisibile(true);
 
     try {
-      await axios.post('/initiateConversion', { typeValue, layersValue });
+      await axios.post('/initiateConversion', {
+        typeValue,
+        layersValue,
+        uploadRow: convertModalInfo,
+        sessionId: window.localStorage.sessionId,
+      });
 
       updateSpinnerIsVisibile(false);
       updateLayersValue([]);

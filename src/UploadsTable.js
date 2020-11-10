@@ -4,16 +4,14 @@ import axios from 'axios';
 import InfoModal from './InfoModal';
 import ConvertModal from './ConvertModal';
 
-export function UploadsTable({ data, updateUploads }) {
+export function UploadsTable({ data, updateData }) {
   const [infoModalOpen, updateInfoModalOpen] = useState(false);
   const [infoModalInfo, updateInfoModalInfo] = useState([]);
   const [rowsBeingDeleted, updateRowsBeingDeleted] = useState([]);
   const [convertModalInfo, updateConvertModalInfo] = useState({});
   const [convertModalOpen, updateConvertModalOpen] = useState(false);
 
-  const rows = parseUploadsData(data);
-
-  console.log({ rows });
+  console.log({ uploads: data });
 
   function deleteUpload(unique_id, key) {
     updateRowsBeingDeleted([...rowsBeingDeleted, unique_id]);
@@ -24,7 +22,7 @@ export function UploadsTable({ data, updateUploads }) {
         // response is all records with current sessionId
         console.log(response);
         updateRowsBeingDeleted(rowsBeingDeleted.filter(row => row.unique_id !== unique_id));
-        updateUploads(response.data.sessionData.Items);
+        updateData(response.data.sessionData.Items);
       })
       .catch(e => {
         console.log('error');
@@ -82,7 +80,7 @@ export function UploadsTable({ data, updateUploads }) {
         </Table.Header>
 
         <Table.Body>
-          {rows.map(row => {
+          {data.map(row => {
             return (
               <Table.Row key={row.unique_id}>
                 <Table.Cell width={1} style={{ textAlign: 'center' }}>
@@ -130,14 +128,4 @@ export function UploadsTable({ data, updateUploads }) {
       </Table>
     </React.Fragment>
   );
-}
-
-function parseUploadsData(data) {
-  const filtered = [...data].filter(item => {
-    return item.row_type === 'upload';
-  });
-  filtered.sort((a, b) => {
-    return b.created - a.created;
-  });
-  return filtered;
 }
