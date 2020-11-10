@@ -5,7 +5,7 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 const { v4: uuid } = require('uuid');
-const { uploadStatus, productStatus, rowTypes } = require('./service/constants.js');
+const { uploadStatus, productStatus, rowTypes, messageTypes } = require('./service/constants.js');
 
 const { uploader } = require('./service/uploader');
 const { putDynamoRecord, sessionIdQuery, deleteDynamoRecord } = require('./service/dynamo');
@@ -92,7 +92,7 @@ app.put('/upload-file', upload.single('file'), async (req, res) => {
       fileEncoding: responseS3.fileEncoding,
     };
     await putDynamoRecord(TABLE, record);
-    await sendSQS(QUEUE, { session_id, unique_id, key: record.data.key }, 'info');
+    await sendSQS(QUEUE, { session_id, unique_id, key: record.data.key }, messageTypes.INFO);
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: e.message });
@@ -116,16 +116,9 @@ app.delete('/delete-upload', async (req, res) => {
     return res.status(500).json({ error: 'parameter(s) missing' });
   }
 
-  console.log({ session_id, unique_id, key });
-
   try {
-    // delete upload dynamo record
     await deleteDynamoRecord(TABLE, session_id, unique_id);
-
-    // delete upload s3 file
     await deleteS3File(BUCKET, key);
-
-    // query sessionId records and return them
     const sessionData = await sessionIdQuery(TABLE, session_id);
     return res.status(200).json({ sessionData });
   } catch (err) {
@@ -139,11 +132,7 @@ app.post('/initiateConversion', async (req, res) => {
   const uploadRow = req.body.uploadRow;
   const session_id = req.body.sessionId;
 
-  console.log({ layersValue, typeValue, uploadRow, session_id });
-
   const unique_id = uuid();
-
-  // create dynamo product record
   const record = {
     session_id,
     unique_id,
@@ -159,11 +148,11 @@ app.post('/initiateConversion', async (req, res) => {
   };
 
   await putDynamoRecord(TABLE, record);
-
-  // send SQS to conversion worker
-  // TODO
-
-  // query sessionId records and return them
+  await sendSQS(
+    QUEUE,
+    { session_id, unique_id, key: uploadRow.data.key, layersValue, typeValue },
+    messageTypes.CONVERT,
+  );
   const sessionData = await sessionIdQuery(TABLE, session_id);
   return res.status(200).json({ sessionData });
 });
