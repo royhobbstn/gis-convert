@@ -2,8 +2,8 @@ const config = require('config');
 const { tempFolder, uploadStatus, productStatus, messageTypes } = require('./constants.js');
 const { v4: uuid } = require('uuid');
 const mkdirp = require('mkdirp');
-const { extractZip, collapseUnzippedDir } = require('./filesystem.js');
-const { downloadFileFromS3 } = require('./s3.js');
+const { extractZip, zipDirectory, collapseUnzippedDir } = require('./filesystem.js');
+const { downloadFileFromS3, putZipFileToS3, getSignedUrl } = require('./s3.js');
 const { findLikelyFile, getOgrInfo, parseOgrOutput } = require('./ogrInfo.js');
 const { convertUsingOgr } = require('./orgConvert.js');
 const { fetchDynamoRecord, putDynamoRecord } = require('./dynamo.js');
@@ -96,16 +96,33 @@ async function processGeoFileConversion(workingFolder, body) {
   }
 
   try {
-    await convertUsingOgr(workingFolder, likelyFile, key, body.layersValue, body.typeValue);
+    const [outputFolder, zipPath, plainKey] = await convertUsingOgr(
+      workingFolder,
+      likelyFile,
+      key,
+      body.layersValue,
+      body.typeValue,
+    );
     //
-    // maybe zip it
+    // always zip it
+    console.log({ workingFolder, outputFolder, zipPath, plainKey });
+    zipDirectory(workingFolder, outputFolder, zipPath);
     //
-    // upload back to S3, get signed URL
-    //
-    // Save Info to Dynamo and update status (use same JSON as earlier to avoid re-calling)
-    // record.info = layers;
-    // record.status = productStatus.READY;
-    // await putDynamoRecord(TABLE, record);
+    // upload back to S3
+    await putZipFileToS3(BUCKET, plainKey, zipPath);
+
+    // get signed URL
+    const hours8 = 60 * 60 * 8;
+    const signedUrl = await getSignedUrl(BUCKET, plainKey, hours8);
+    console.log({ signedUrl });
+
+    console.log({ record });
+
+    // attach info to dynamo record
+    record.data.key = plainKey;
+    record.data.signedUrl = signedUrl;
+    record.status = productStatus.READY;
+    await putDynamoRecord(TABLE, record);
   } catch (err) {
     console.error(err);
   }

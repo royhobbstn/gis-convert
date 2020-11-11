@@ -25,5 +25,5 @@ exports.ogrDrivers = {
   ODS: { app: 'ODS', ext: '.todo' },
   XLSX: { app: 'XLSX', ext: '.xlsx' },
   ElasticSearch: { app: 'ES', ext: '.todo' },
-  MVT: { app: 'MVT', ext: '.mvt' },
+  MVT: { app: 'MVT', ext: '' },
 };

@@ -13,6 +13,17 @@ exports.extractZip = (workingFolder, key) => {
   }
 };
 
+exports.zipDirectory = (navigateTo, outputRoot, zipPath) => {
+  try {
+    const output = execSync(`cd ${navigateTo} && zip -r ${zipPath} ${outputRoot}`);
+    console.log('Zip Log: ' + output.toString());
+    console.log(`Success zipping ${outputRoot} to ${zipPath}`);
+  } catch (e) {
+    console.log(`Zipping folder ${outputRoot} to ${zipPath} failed`);
+    throw e;
+  }
+};
+
 exports.collapseUnzippedDir = workingFolder => {
   const arrayOfFiles = fs.readdirSync(workingFolder);
   let movedFlag = false;
