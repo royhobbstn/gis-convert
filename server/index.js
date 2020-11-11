@@ -81,6 +81,7 @@ app.put('/upload-file', upload.single('file'), async (req, res) => {
     const responseS3 = await uploader(req.file);
 
     record.status = uploadStatus.UPLOADED;
+    record.modified = Date.now();
     record.data = {
       signedUrl: responseS3.signedOriginalUrl,
       key: responseS3.originalFile.key,

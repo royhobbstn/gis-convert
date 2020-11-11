@@ -27,7 +27,17 @@ export function ProductsTable({ data, updateData }) {
 
   return (
     <React.Fragment>
-      <p style={{ maxWidth: '800px', margin: 'auto', fontWeight: 'bold' }}>Products</p>
+      <p
+        style={{
+          maxWidth: '800px',
+          margin: 'auto',
+          fontWeight: 'bold',
+          padding: '5px',
+          fontSize: '18px',
+        }}
+      >
+        Products
+      </p>
       <Table
         unstackable
         celled
@@ -43,9 +53,11 @@ export function ProductsTable({ data, updateData }) {
       >
         <Table.Header style={{ position: 'sticky' }}>
           <Table.Row>
-            <Table.HeaderCell></Table.HeaderCell>
-            <Table.HeaderCell>Date</Table.HeaderCell>
-            <Table.HeaderCell>File</Table.HeaderCell>
+            <Table.HeaderCell>Link</Table.HeaderCell>
+            <Table.HeaderCell>Created</Table.HeaderCell>
+            <Table.HeaderCell>Output Filename</Table.HeaderCell>
+            <Table.HeaderCell>Layer(s)</Table.HeaderCell>
+            <Table.HeaderCell>Type</Table.HeaderCell>
             <Table.HeaderCell style={{ textAlign: 'center' }}>Status</Table.HeaderCell>
             <Table.HeaderCell></Table.HeaderCell>
           </Table.Row>
@@ -56,12 +68,18 @@ export function ProductsTable({ data, updateData }) {
             return (
               <Table.Row key={row.unique_id}>
                 <Table.Cell width={1} style={{ textAlign: 'center' }}>
-                  <a href={row.data.signedUrl} target="_blank" rel="noreferrer">
-                    <Icon fitted name="linkify" />
-                  </a>
+                  {row.status === 'READY' ? (
+                    <a href={row.data.signedUrl} target="_blank" rel="noreferrer">
+                      <Icon fitted name="linkify" />
+                    </a>
+                  ) : null}
                 </Table.Cell>
-                <Table.Cell width={4}>{new Date(Number(row.created)).toLocaleString()}</Table.Cell>
-                <Table.Cell width={5}>{row.data.originalName}</Table.Cell>
+                <Table.Cell width={2}>
+                  {new Date(Number(row.created)).toLocaleTimeString()}
+                </Table.Cell>
+                <Table.Cell width={4}>{row.data.key}</Table.Cell>
+                <Table.Cell width={2}>{row.data.layersValue.join(', ')}</Table.Cell>
+                <Table.Cell width={1}>{row.data.typeValue}</Table.Cell>
                 <Table.Cell width={1}>{row.status}</Table.Cell>
                 <Table.Cell width={1} style={{ textAlign: 'center' }}>
                   {row.status === 'READY' ? (
@@ -70,9 +88,9 @@ export function ProductsTable({ data, updateData }) {
                         <Icon style={{ color: 'black' }} loading fitted name="spinner" />
                       ) : (
                         <Icon
-                          style={{ color: 'red' }}
+                          style={{ color: 'grey' }}
                           fitted
-                          name="remove"
+                          name="trash"
                           onClick={() => deleteUpload(row.unique_id, row.data.key)}
                         />
                       )}

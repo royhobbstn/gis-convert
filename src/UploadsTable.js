@@ -53,7 +53,17 @@ export function UploadsTable({ data, updateData }) {
         convertModalInfo={convertModalInfo}
         updateConvertModalOpen={updateConvertModalOpen}
       />
-      <p style={{ maxWidth: '800px', margin: 'auto', fontWeight: 'bold' }}>Uploads</p>
+      <p
+        style={{
+          maxWidth: '800px',
+          margin: 'auto',
+          fontWeight: 'bold',
+          padding: '5px',
+          fontSize: '18px',
+        }}
+      >
+        Uploads
+      </p>
       <Table
         unstackable
         celled
@@ -70,7 +80,7 @@ export function UploadsTable({ data, updateData }) {
         <Table.Header style={{ position: 'sticky' }}>
           <Table.Row>
             <Table.HeaderCell></Table.HeaderCell>
-            <Table.HeaderCell>Date</Table.HeaderCell>
+            <Table.HeaderCell>Last Modified</Table.HeaderCell>
             <Table.HeaderCell>File</Table.HeaderCell>
             <Table.HeaderCell style={{ textAlign: 'center' }}>Status</Table.HeaderCell>
             <Table.HeaderCell style={{ textAlign: 'center' }}>Convert</Table.HeaderCell>
@@ -84,11 +94,15 @@ export function UploadsTable({ data, updateData }) {
             return (
               <Table.Row key={row.unique_id}>
                 <Table.Cell width={1} style={{ textAlign: 'center' }}>
-                  <a href={row.data.signedUrl} target="_blank" rel="noreferrer">
-                    <Icon fitted name="linkify" />
-                  </a>
+                  {row.status === 'READY' ? (
+                    <a href={row.data.signedUrl} target="_blank" rel="noreferrer">
+                      <Icon fitted name="linkify" />
+                    </a>
+                  ) : null}
                 </Table.Cell>
-                <Table.Cell width={4}>{new Date(Number(row.created)).toLocaleString()}</Table.Cell>
+                <Table.Cell width={4}>
+                  {new Date(Number(row.modified)).toLocaleTimeString()}
+                </Table.Cell>
                 <Table.Cell width={5}>{row.data.originalName}</Table.Cell>
                 <Table.Cell width={1}>{row.status}</Table.Cell>
                 <Table.Cell width={2} style={{ textAlign: 'center' }}>
@@ -112,9 +126,9 @@ export function UploadsTable({ data, updateData }) {
                         <Icon style={{ color: 'black' }} loading fitted name="spinner" />
                       ) : (
                         <Icon
-                          style={{ color: 'red' }}
+                          style={{ color: 'grey' }}
                           fitted
-                          name="remove"
+                          name="trash"
                           onClick={() => deleteUpload(row.unique_id, row.data.key)}
                         />
                       )}

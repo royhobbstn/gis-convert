@@ -40,6 +40,7 @@ async function processGeoFileInfo(workingFolder, body) {
 
   // update status in Dynamo from Uploaded to SCANNING
   record.status = uploadStatus.SCANNING;
+  record.modified = Date.now();
   await putDynamoRecord(TABLE, record);
 
   // load file from S3
@@ -64,6 +65,7 @@ async function processGeoFileInfo(workingFolder, body) {
   // Save Info to Dynamo and update status (use same JSON as earlier to avoid re-calling)
   record.info = layers;
   record.status = uploadStatus.READY;
+  record.modified = Date.now();
   await putDynamoRecord(TABLE, record);
 }
 
@@ -80,6 +82,7 @@ async function processGeoFileConversion(workingFolder, body) {
 
   // update status in Dynamo from Uploaded to SCANNING
   record.status = productStatus.CONVERTING;
+  record.modified = Date.now();
   await putDynamoRecord(TABLE, record);
 
   // load file from S3
@@ -122,6 +125,7 @@ async function processGeoFileConversion(workingFolder, body) {
     record.data.key = plainKey;
     record.data.signedUrl = signedUrl;
     record.status = productStatus.READY;
+    record.modified = Date.now();
     await putDynamoRecord(TABLE, record);
   } catch (err) {
     console.error(err);
