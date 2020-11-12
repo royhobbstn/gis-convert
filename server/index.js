@@ -128,10 +128,12 @@ app.post('/data', async (req, res) => {
   return res.status(200).json({ sessionData });
 });
 
-app.delete('/delete-upload', async (req, res) => {
-  const session_id = req.body.token;
-  const unique_id = req.body.unique;
+app.delete('/delete-entry', async (req, res) => {
+  const session_id = req.body.session_id;
+  const unique_id = req.body.unique_id;
   const key = req.body.key;
+
+  console.log({ session_id, unique_id, key });
 
   if (!session_id || !unique_id || !key) {
     return res.status(500).json({ error: 'parameter(s) missing' });

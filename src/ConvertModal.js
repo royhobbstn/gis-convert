@@ -27,13 +27,14 @@ export function ConvertModal({
       });
 
       updateData(response.data.sessionData.Items);
-      updateSpinnerIsVisibile(false);
-      updateLayersValue([]);
-      updateTypeValue('');
       updateConvertModalOpen(false);
     } catch (err) {
       console.error(err);
       alert('Unable to begin file conversion');
+    } finally {
+      updateLayersValue([]);
+      updateTypeValue('');
+      updateSpinnerIsVisibile(false);
     }
   }
 

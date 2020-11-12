@@ -2,7 +2,6 @@ import React from 'react';
 import { Table, Modal } from 'semantic-ui-react';
 
 export function InfoModal({ infoModalOpen, updateInfoModalOpen, infoModalInfo }) {
-  console.log(infoModalInfo);
   return (
     <Modal
       onClose={() => updateInfoModalOpen(false)}

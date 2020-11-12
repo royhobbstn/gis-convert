@@ -29,43 +29,56 @@ exports.processMessage = async incomingPayload => {
 };
 
 async function processGeoFileInfo(workingFolder, body) {
-  const sessionId = body.session_id;
-  const uniqueId = body.unique_id;
-  const key = body.key;
+  try {
+    const sessionId = body.session_id;
+    const uniqueId = body.unique_id;
+    const key = body.key;
 
-  // fetch DYNAMO record
-  const response = await fetchDynamoRecord(TABLE, sessionId, uniqueId);
-  const record = response.Items[0];
+    // fetch DYNAMO record
+    const response = await fetchDynamoRecord(TABLE, sessionId, uniqueId);
+    const record = response.Items[0];
 
-  // update status in Dynamo from Uploaded to SCANNING
-  record.status = uploadStatus.SCANNING;
-  record.modified = Date.now();
-  await putDynamoRecord(TABLE, record);
+    // update status in Dynamo from Uploaded to SCANNING
+    record.status = uploadStatus.SCANNING;
+    record.modified = Date.now();
+    await putDynamoRecord(TABLE, record);
 
-  // load file from S3
-  await downloadFileFromS3(BUCKET, key, workingFolder);
+    // load file from S3
+    await downloadFileFromS3(BUCKET, key, workingFolder);
 
-  // extract file down from zip if needed.
-  const lastFourChars = key.slice(-4);
-  let likelyFile = workingFolder + key;
-  // A BIG TODO: use /vsizip/ and /vsis3/ in place of below
-  if (lastFourChars === '.zip') {
-    extractZip(workingFolder, key);
-    collapseUnzippedDir(workingFolder);
-    likelyFile = findLikelyFile(workingFolder);
+    // extract file down from zip if needed.
+    const lastFourChars = key.slice(-4);
+    let likelyFile = workingFolder + key;
+    // A BIG TODO: use /vsizip/ and /vsis3/ in place of below
+    if (lastFourChars === '.zip') {
+      extractZip(workingFolder, key);
+      collapseUnzippedDir(workingFolder);
+      likelyFile = findLikelyFile(workingFolder);
+    }
+
+    // send to ogr-info command line
+    const ogrOutput = await getOgrInfo(likelyFile);
+
+    // parseOgrInfo into JSON.
+    const layers = parseOgrOutput(ogrOutput);
+
+    // Save Info to Dynamo and update status (use same JSON as earlier to avoid re-calling)
+    record.info = layers;
+    record.status = uploadStatus.READY;
+    record.modified = Date.now();
+    await putDynamoRecord(TABLE, record);
+  } catch (err) {
+    console.error(err);
+    record.data = {
+      main: 'Error in Info',
+      message: err.message,
+    };
+    record.modified = Date.now();
+    await putDynamoRecord(TABLE, record);
+    putDynamoRecord(TABLE, record).catch(err => {
+      console.error(err);
+    });
   }
-
-  // send to ogr-info command line
-  const ogrOutput = await getOgrInfo(likelyFile);
-
-  // parseOgrInfo into JSON.
-  const layers = parseOgrOutput(ogrOutput);
-
-  // Save Info to Dynamo and update status (use same JSON as earlier to avoid re-calling)
-  record.info = layers;
-  record.status = uploadStatus.READY;
-  record.modified = Date.now();
-  await putDynamoRecord(TABLE, record);
 }
 
 async function processGeoFileConversion(workingFolder, body) {
@@ -119,5 +132,14 @@ async function processGeoFileConversion(workingFolder, body) {
     await putDynamoRecord(TABLE, record);
   } catch (err) {
     console.error(err);
+    record.data = {
+      main: 'Error in Upload',
+      message: err.message,
+    };
+    record.modified = Date.now();
+    await putDynamoRecord(TABLE, record);
+    putDynamoRecord(TABLE, record).catch(err => {
+      console.error(err);
+    });
   }
 }

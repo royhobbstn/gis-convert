@@ -15,10 +15,10 @@ export function UploadsTable({ data, updateData }) {
     updateRowsBeingDeleted([...rowsBeingDeleted, unique_id]);
     const token = window.localStorage.getItem('sessionId');
     axios
-      .delete(`/delete-upload`, {
+      .delete(`/delete-entry`, {
         data: {
-          token,
-          unique: unique_id,
+          session_id: token,
+          unique_id: unique_id,
           key,
         },
       })
@@ -124,20 +124,18 @@ export function UploadsTable({ data, updateData }) {
                   ) : null}
                 </Table.Cell>
                 <Table.Cell width={1} style={{ textAlign: 'center' }}>
-                  {row.status === 'READY' ? (
-                    <div role="button" style={{ cursor: 'pointer' }}>
-                      {rowsBeingDeleted.includes(row.unique_id) ? (
-                        <Icon style={{ color: 'black' }} loading fitted name="spinner" />
-                      ) : (
-                        <Icon
-                          style={{ color: 'grey' }}
-                          fitted
-                          name="trash"
-                          onClick={() => deleteUpload(row.unique_id, row.data.key)}
-                        />
-                      )}
-                    </div>
-                  ) : null}
+                  <div role="button" style={{ cursor: 'pointer' }}>
+                    {rowsBeingDeleted.includes(row.unique_id) ? (
+                      <Icon style={{ color: 'black' }} loading fitted name="spinner" />
+                    ) : (
+                      <Icon
+                        style={{ color: 'grey' }}
+                        fitted
+                        name="trash"
+                        onClick={() => deleteUpload(row.unique_id, row.data.key)}
+                      />
+                    )}
+                  </div>
                 </Table.Cell>
               </Table.Row>
             );

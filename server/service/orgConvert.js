@@ -1,14 +1,13 @@
-const fs = require('fs');
+const { v4: uuid } = require('uuid');
 const mkdirp = require('mkdirp');
 const spawn = require('child_process').spawn;
 const { ogrDrivers } = require('../lookup/ogrDrivers.js');
 
 exports.convertUsingOgr = (workingFolder, likelyFile, key, layersValue, typeValue) => {
-  console.log({ likelyFile, layersValue, typeValue });
-
+  // todo uh oh im not using layers?
   const ext = lookupExt(typeValue);
   const convert = lookupDesc(typeValue);
-  const plainKey = key.replace('.zip', '');
+  const plainKey = uuid().slice(0, 6) + key.slice(6).replace('.zip', '');
   const outputFolder = `${plainKey}_${convert}/`;
   const zipFolder = 'zipped/';
   const outputRoot = `${workingFolder}${outputFolder}`;
