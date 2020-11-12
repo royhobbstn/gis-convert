@@ -11,23 +11,26 @@ export function UploadsTable({ data, updateData }) {
   const [convertModalInfo, updateConvertModalInfo] = useState({});
   const [convertModalOpen, updateConvertModalOpen] = useState(false);
 
-  console.log({ uploads: data });
-
   function deleteUpload(unique_id, key) {
     updateRowsBeingDeleted([...rowsBeingDeleted, unique_id]);
     const token = window.localStorage.getItem('sessionId');
     axios
-      .delete(`/delete-upload?token=${token}&unique=${unique_id}&key=${key}`)
+      .delete(`/delete-upload`, {
+        data: {
+          token,
+          unique: unique_id,
+          key,
+        },
+      })
       .then(response => {
-        // response is all records with current sessionId
-        console.log(response);
-        updateRowsBeingDeleted(rowsBeingDeleted.filter(row => row.unique_id !== unique_id));
         updateData(response.data.sessionData.Items);
       })
       .catch(e => {
-        console.log('error');
-        console.log(e);
+        console.error(e);
         alert('Unable to delete upload!');
+      })
+      .finally(() => {
+        updateRowsBeingDeleted(rowsBeingDeleted.filter(row => row.unique_id !== unique_id));
       });
   }
 
@@ -49,6 +52,7 @@ export function UploadsTable({ data, updateData }) {
         updateInfoModalOpen={updateInfoModalOpen}
       />
       <ConvertModal
+        updateData={updateData}
         convertModalOpen={convertModalOpen}
         convertModalInfo={convertModalInfo}
         updateConvertModalOpen={updateConvertModalOpen}

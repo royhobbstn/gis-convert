@@ -1,13 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import './lib/storage.js';
 import { UploadsTable } from './UploadsTable';
 import { ProductsTable } from './ProductsTable';
 import { UploadControl } from './UploadControl';
 
+let heartbeat = null;
+
 function App() {
   const [data, updateData] = useState([]);
-
   const [uploads, products] = parseData(data);
+
+  useEffect(() => {
+    if (statusPending(data)) {
+      console.log('pending');
+      if (!heartbeat) {
+        console.log('doesnt exist');
+        heartbeat = window.setInterval(async () => {
+          console.log('calling');
+          const token = window.localStorage.getItem('sessionId');
+          let response;
+          try {
+            response = await axios.post(`/data`, { token });
+            updateData(response.data.sessionData.Items);
+          } catch (err) {
+            console.error(err);
+            // stop sending requests if they error
+            if (heartbeat) {
+              clearInterval(heartbeat);
+            }
+          }
+        }, 5000);
+      }
+    } else {
+      console.log('not pending');
+      if (heartbeat) {
+        clearInterval(heartbeat);
+      }
+    }
+  }, [data, updateData]);
 
   return (
     <div className="App">
@@ -31,12 +62,9 @@ function App() {
 export default App;
 
 function parseData(data) {
-  console.log({ data });
   const sortedData = [...data].sort((a, b) => {
     return b.created - a.created;
   });
-
-  console.log({ sortedData });
 
   const uploads = [];
   const products = [];
@@ -52,4 +80,15 @@ function parseData(data) {
   }
 
   return [uploads, products];
+}
+
+function statusPending(data) {
+  console.log(data);
+  for (let row of data) {
+    console.log(row.status);
+    if (row.status !== 'READY' && row.status !== 'ERROR') {
+      return true;
+    }
+  }
+  return false;
 }

@@ -3,7 +3,12 @@ import { Modal, Dropdown, Button, Icon } from 'semantic-ui-react';
 import { ogrDrivers } from './lookup/ogrDrivers';
 import axios from 'axios';
 
-export function ConvertModal({ convertModalOpen, updateConvertModalOpen, convertModalInfo }) {
+export function ConvertModal({
+  convertModalOpen,
+  updateConvertModalOpen,
+  convertModalInfo,
+  updateData,
+}) {
   const [spinnerIsVisible, updateSpinnerIsVisibile] = useState(false);
   const [typeValue, updateTypeValue] = useState('');
   const [layersValue, updateLayersValue] = useState([]);
@@ -14,20 +19,21 @@ export function ConvertModal({ convertModalOpen, updateConvertModalOpen, convert
     updateSpinnerIsVisibile(true);
 
     try {
-      await axios.post('/initiateConversion', {
+      const response = await axios.post('/initiateConversion', {
         typeValue,
         layersValue,
         uploadRow: convertModalInfo,
         sessionId: window.localStorage.sessionId,
       });
 
+      updateData(response.data.sessionData.Items);
       updateSpinnerIsVisibile(false);
       updateLayersValue([]);
       updateTypeValue('');
       updateConvertModalOpen(false);
     } catch (err) {
-      console.log(err);
-      // TODO
+      console.error(err);
+      alert('Unable to begin file conversion');
     }
   }
 

@@ -16,7 +16,6 @@ exports.processMessage = async incomingPayload => {
   const messageType = attributes.messageType.StringValue;
   const body = JSON.parse(message.Body);
   const folderId = uuid().slice(0, 6) + '/';
-
   const workingFolder = tempFolder + folderId;
   mkdirp.sync(workingFolder);
 
@@ -74,8 +73,6 @@ async function processGeoFileConversion(workingFolder, body) {
   const uniqueId = body.unique_id;
   const key = body.key;
 
-  console.log({ body });
-
   // fetch DYNAMO record
   const response = await fetchDynamoRecord(TABLE, sessionId, uniqueId);
   const record = response.Items[0];
@@ -106,20 +103,13 @@ async function processGeoFileConversion(workingFolder, body) {
       body.layersValue,
       body.typeValue,
     );
-    //
-    // always zip it
-    console.log({ workingFolder, outputFolder, zipPath, plainKey });
+
     zipDirectory(workingFolder, outputFolder, zipPath);
-    //
-    // upload back to S3
     await putZipFileToS3(BUCKET, plainKey, zipPath);
 
     // get signed URL
     const hours8 = 60 * 60 * 8;
     const signedUrl = await getSignedUrl(BUCKET, plainKey, hours8);
-    console.log({ signedUrl });
-
-    console.log({ record });
 
     // attach info to dynamo record
     record.data.key = plainKey;

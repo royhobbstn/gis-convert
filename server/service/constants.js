@@ -7,14 +7,14 @@ exports.uploadStatus = {
   UPLOADED: 'UPLOADED',
   SCANNING: 'SCANNING ',
   READY: 'READY',
-  // ERRORED?
+  ERROR: 'ERROR',
 };
 
 exports.productStatus = {
   WAITING: 'WAITING',
   CONVERTING: 'CONVERTING',
   READY: 'READY',
-  // ERRORED?
+  ERROR: 'ERROR',
 };
 
 exports.messageTypes = {

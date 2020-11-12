@@ -43,43 +43,48 @@ setInterval(async () => {
     };
     await deleteMessage(deleteParams);
   } catch (e) {
-    console.log('unexpected error');
     console.error(e);
   } finally {
     busy = false;
-    // clean up temporary directory
+    // TODO clean up temporary directory
   }
-}, 30000);
+}, 10000);
 
 app.put('/upload-file', upload.single('file'), async (req, res) => {
+  const session_id = req.body.token;
+  const unique_id = uuid();
+  if (!session_id) {
+    return res.status(500).json({ error: 'token parameter missing' });
+  }
+
+  // create dynamo record
+  const record = {
+    session_id,
+    unique_id,
+    row_type: rowTypes.UPLOAD,
+    created: Date.now(),
+    modified: Date.now(),
+    status: uploadStatus.UPLOADING,
+    data: {
+      originalName: req.file.originalname,
+    },
+  };
+
+  let sessionData;
   try {
-    const session_id = req.query.token;
-    const unique_id = uuid();
-    if (!session_id) {
-      return res.status(500).json({ error: 'token parameter missing' });
-    }
-
-    // create dynamo record
-    const record = {
-      session_id,
-      unique_id,
-      row_type: rowTypes.UPLOAD,
-      created: Date.now(),
-      modified: Date.now(),
-      status: uploadStatus.UPLOADING,
-      data: {
-        originalName: req.file.originalname,
-      },
-    };
-
     await putDynamoRecord(TABLE, record);
-    const sessionData = await sessionIdQuery(TABLE, session_id);
+    sessionData = await sessionIdQuery(TABLE, session_id);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
 
-    // return data here to user, but endpoint continues
-    res.status(200).json({ sessionData });
+  // return data here to user, but endpoint continues
+  res.status(200).json({ sessionData });
 
-    const responseS3 = await uploader(req.file);
-
+  let responseS3;
+  try {
+    responseS3 = await uploader(req.file);
     record.status = uploadStatus.UPLOADED;
     record.modified = Date.now();
     record.data = {
@@ -94,25 +99,40 @@ app.put('/upload-file', upload.single('file'), async (req, res) => {
     };
     await putDynamoRecord(TABLE, record);
     await sendSQS(QUEUE, { session_id, unique_id, key: record.data.key }, messageTypes.INFO);
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ error: e.message });
+  } catch (err) {
+    record.status = uploadStatus.ERRORED;
+    record.data = {
+      main: 'Error in Upload',
+      message: err.message,
+    };
+    record.modified = Date.now();
+    putDynamoRecord(TABLE, record).catch(err => {
+      console.error(err);
+    });
   }
 });
 
-app.get('/data', async (req, res) => {
-  const session_id = req.query.token;
+app.post('/data', async (req, res) => {
+  const session_id = req.body.token;
   if (!session_id) {
     return res.status(500).json({ error: 'token parameter missing' });
   }
-  const sessionData = await sessionIdQuery(TABLE, session_id);
+  let sessionData;
+
+  try {
+    sessionData = await sessionIdQuery(TABLE, session_id);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
   return res.status(200).json({ sessionData });
 });
 
 app.delete('/delete-upload', async (req, res) => {
-  const session_id = req.query.token;
-  const unique_id = req.query.unique;
-  const key = req.query.key;
+  const session_id = req.body.token;
+  const unique_id = req.body.unique;
+  const key = req.body.key;
+
   if (!session_id || !unique_id || !key) {
     return res.status(500).json({ error: 'parameter(s) missing' });
   }
@@ -123,6 +143,7 @@ app.delete('/delete-upload', async (req, res) => {
     const sessionData = await sessionIdQuery(TABLE, session_id);
     return res.status(200).json({ sessionData });
   } catch (err) {
+    console.error(err);
     return res.status(500).json({ error: err.message });
   }
 });
@@ -148,13 +169,20 @@ app.post('/initiateConversion', async (req, res) => {
     },
   };
 
-  await putDynamoRecord(TABLE, record);
-  await sendSQS(
-    QUEUE,
-    { session_id, unique_id, key: uploadRow.data.key, layersValue, typeValue },
-    messageTypes.CONVERT,
-  );
-  const sessionData = await sessionIdQuery(TABLE, session_id);
+  let sessionData;
+  try {
+    await putDynamoRecord(TABLE, record);
+    await sendSQS(
+      QUEUE,
+      { session_id, unique_id, key: uploadRow.data.key, layersValue, typeValue },
+      messageTypes.CONVERT,
+    );
+    sessionData = await sessionIdQuery(TABLE, session_id);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
+
   return res.status(200).json({ sessionData });
 });
 

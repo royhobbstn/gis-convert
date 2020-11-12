@@ -1,27 +1,30 @@
 import React, { useState } from 'react';
-import { Table, Icon, Button } from 'semantic-ui-react';
+import { Table, Icon } from 'semantic-ui-react';
 import axios from 'axios';
 
 export function ProductsTable({ data, updateData }) {
   const [rowsBeingDeleted, updateRowsBeingDeleted] = useState([]);
 
-  console.log({ uploads: data });
-
   function deleteUpload(unique_id, key) {
     updateRowsBeingDeleted([...rowsBeingDeleted, unique_id]);
     const token = window.localStorage.getItem('sessionId');
     axios
-      .delete(`/delete-upload?token=${token}&unique=${unique_id}&key=${key}`)
+      .delete(`/delete-upload`, {
+        data: {
+          token,
+          unique: unique_id,
+          key,
+        },
+      })
       .then(response => {
-        // response is all records with current sessionId
-        console.log(response);
-        updateRowsBeingDeleted(rowsBeingDeleted.filter(row => row.unique_id !== unique_id));
         updateData(response.data.sessionData.Items);
       })
       .catch(e => {
-        console.log('error');
-        console.log(e);
+        console.error(e);
         alert('Unable to delete upload!');
+      })
+      .finally(() => {
+        updateRowsBeingDeleted(rowsBeingDeleted.filter(row => row.unique_id !== unique_id));
       });
   }
 

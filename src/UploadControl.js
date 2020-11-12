@@ -8,9 +8,14 @@ export function UploadControl({ updateData }) {
   useEffect(() => {
     async function fetchDynamoData() {
       const token = window.localStorage.getItem('sessionId');
-      const response = await axios.get(`/data?token=${token}`);
-      console.log(response);
-      updateData(response.data.sessionData.Items);
+      let response;
+      try {
+        response = await axios.post(`/data`, { token });
+        updateData(response.data.sessionData.Items);
+      } catch (err) {
+        console.error(err);
+        alert('Unable to fetch data from the server.');
+      }
     }
     fetchDynamoData();
   }, [updateData]);
@@ -21,28 +26,23 @@ export function UploadControl({ updateData }) {
       return false;
     }
     if (file.size > 10e6) {
-      window.alert('File exceeds 10 MB limit.');
+      alert('File exceeds 10 MB limit.');
       return false;
     }
 
+    const token = window.localStorage.getItem('sessionId');
     const formData = new FormData();
     formData.append('file', evt.target.files[0]);
-    const token = window.localStorage.getItem('sessionId');
+    formData.append('token', token);
     axios
-      .put(`/upload-file?token=${token}`, formData, {
+      .put(`/upload-file`, formData, {
         headers: { 'content-type': 'multipart/form-data' },
       })
       .then(response => {
-        console.log(response);
-        // response is all records with current sessionId
         updateData(response.data.sessionData.Items);
-        initiateHeartbeat();
       })
-      .catch(e => {
-        // send an error record to dynamo?
-
-        console.log('error');
-        console.log(e);
+      .catch(err => {
+        console.error(err);
         alert('Unable to upload file!');
       });
   }
@@ -67,11 +67,4 @@ export function UploadControl({ updateData }) {
       <input ref={fileUpload} type="file" hidden onChange={chooseFile} />
     </div>
   );
-}
-
-function initiateHeartbeat() {
-  // if heartbeat already happening, return
-  // if not, start setInterval.
-  // -- in heartbeat dynamo call to fetch all data for session ID
-  // -- if all data either in ERROR or DONE state, clear timeout
 }
