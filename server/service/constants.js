@@ -2,19 +2,12 @@
 
 exports.tempFolder = '/tempGeoFiles/';
 
-exports.uploadStatus = {
-  UPLOADING: 'UPLOADING',
-  UPLOADED: 'UPLOADED',
-  SCANNING: 'SCANNING ',
-  READY: 'READY',
-  ERROR: 'ERROR',
-};
-
-exports.productStatus = {
+exports.generalStatus = {
+  UPLOADING: 'UPLOADING', // upload table only
   WAITING: 'WAITING',
-  CONVERTING: 'CONVERTING',
-  READY: 'READY',
-  ERROR: 'ERROR',
+  BUSY: 'BUSY',
+  READY: 'READY', // settled
+  ERROR: 'ERROR', // settled
 };
 
 exports.messageTypes = {

@@ -59,7 +59,6 @@ export function ProductsTable({ data, updateData }) {
             <Table.HeaderCell>Link</Table.HeaderCell>
             <Table.HeaderCell>Created</Table.HeaderCell>
             <Table.HeaderCell>Output Filename</Table.HeaderCell>
-            <Table.HeaderCell>Layer(s)</Table.HeaderCell>
             <Table.HeaderCell>Type</Table.HeaderCell>
             <Table.HeaderCell style={{ textAlign: 'center' }}>Status</Table.HeaderCell>
             <Table.HeaderCell></Table.HeaderCell>
@@ -81,7 +80,6 @@ export function ProductsTable({ data, updateData }) {
                   {new Date(Number(row.created)).toLocaleTimeString()}
                 </Table.Cell>
                 <Table.Cell width={4}>{row.data.key}</Table.Cell>
-                <Table.Cell width={2}>{row.data.layersValue.join(', ')}</Table.Cell>
                 <Table.Cell width={1}>{row.data.typeValue}</Table.Cell>
                 <Table.Cell width={1}>{row.status}</Table.Cell>
                 <Table.Cell width={1} style={{ textAlign: 'center' }}>

@@ -1,11 +1,11 @@
 const config = require('config');
-const { tempFolder, uploadStatus, productStatus, messageTypes } = require('./constants.js');
+const { tempFolder, generalStatus, messageTypes } = require('./constants.js');
 const { v4: uuid } = require('uuid');
 const mkdirp = require('mkdirp');
 const { extractZip, zipDirectory, collapseUnzippedDir } = require('./filesystem.js');
 const { downloadFileFromS3, putZipFileToS3, getSignedUrl } = require('./s3.js');
 const { findLikelyFile, getOgrInfo, parseOgrOutput } = require('./ogrInfo.js');
-const { convertUsingOgr } = require('./orgConvert.js');
+const { convertUsingOgr } = require('./ogrConvert.js');
 const { fetchDynamoRecord, putDynamoRecord } = require('./dynamo.js');
 const TABLE = config.get('Dynamo.table');
 const BUCKET = config.get('Buckets.mainBucket');
@@ -38,8 +38,8 @@ async function processGeoFileInfo(workingFolder, body) {
     const response = await fetchDynamoRecord(TABLE, sessionId, uniqueId);
     const record = response.Items[0];
 
-    // update status in Dynamo from Uploaded to SCANNING
-    record.status = uploadStatus.SCANNING;
+    // update status in Dynamo from UPLOADED to BUSY
+    record.status = generalStatus.BUSY;
     record.modified = Date.now();
     await putDynamoRecord(TABLE, record);
 
@@ -64,7 +64,7 @@ async function processGeoFileInfo(workingFolder, body) {
 
     // Save Info to Dynamo and update status (use same JSON as earlier to avoid re-calling)
     record.info = layers;
-    record.status = uploadStatus.READY;
+    record.status = generalStatus.READY;
     record.modified = Date.now();
     await putDynamoRecord(TABLE, record);
   } catch (err) {
@@ -90,8 +90,8 @@ async function processGeoFileConversion(workingFolder, body) {
   const response = await fetchDynamoRecord(TABLE, sessionId, uniqueId);
   const record = response.Items[0];
 
-  // update status in Dynamo from Uploaded to SCANNING
-  record.status = productStatus.CONVERTING;
+  // update status in Dynamo from UPLOADED to BUSY
+  record.status = generalStatus.BUSY;
   record.modified = Date.now();
   await putDynamoRecord(TABLE, record);
 
@@ -101,7 +101,7 @@ async function processGeoFileConversion(workingFolder, body) {
   // extract file down from zip if needed.
   const lastFourChars = key.slice(-4);
   let likelyFile = workingFolder + key;
-  // A BIG TODO: use /vsizip/ and /vsis3/ in place of below
+
   if (lastFourChars === '.zip') {
     extractZip(workingFolder, key);
     collapseUnzippedDir(workingFolder);
@@ -113,7 +113,6 @@ async function processGeoFileConversion(workingFolder, body) {
       workingFolder,
       likelyFile,
       key,
-      body.layersValue,
       body.typeValue,
     );
 
@@ -127,7 +126,7 @@ async function processGeoFileConversion(workingFolder, body) {
     // attach info to dynamo record
     record.data.key = plainKey;
     record.data.signedUrl = signedUrl;
-    record.status = productStatus.READY;
+    record.status = generalStatus.READY;
     record.modified = Date.now();
     await putDynamoRecord(TABLE, record);
   } catch (err) {
@@ -141,5 +140,34 @@ async function processGeoFileConversion(workingFolder, body) {
     putDynamoRecord(TABLE, record).catch(err => {
       console.error(err);
     });
+  }
+}
+
+// download and unzip file in preparation for ogrinfo or ogr2ogr
+async function setTable(workingFolder, body) {
+  const sessionId = body.session_id;
+  const uniqueId = body.unique_id;
+  const key = body.key;
+
+  // fetch DYNAMO record
+  const response = await fetchDynamoRecord(TABLE, sessionId, uniqueId);
+  const record = response.Items[0];
+
+  // update status in Dynamo from Uploaded to SCANNING
+  record.status = generalStatus.BUSY;
+  record.modified = Date.now();
+  await putDynamoRecord(TABLE, record);
+
+  // load file from S3
+  await downloadFileFromS3(BUCKET, key, workingFolder);
+
+  // extract file down from zip if needed.
+  const lastFourChars = key.slice(-4);
+  let likelyFile = workingFolder + key;
+
+  if (lastFourChars === '.zip') {
+    extractZip(workingFolder, key);
+    collapseUnzippedDir(workingFolder);
+    likelyFile = findLikelyFile(workingFolder);
   }
 }

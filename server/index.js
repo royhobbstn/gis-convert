@@ -5,7 +5,7 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 const { v4: uuid } = require('uuid');
-const { uploadStatus, productStatus, rowTypes, messageTypes } = require('./service/constants.js');
+const { generalStatus, rowTypes, messageTypes } = require('./service/constants.js');
 
 const { uploader } = require('./service/uploader');
 const { putDynamoRecord, sessionIdQuery, deleteDynamoRecord } = require('./service/dynamo');
@@ -64,7 +64,7 @@ app.put('/upload-file', upload.single('file'), async (req, res) => {
     row_type: rowTypes.UPLOAD,
     created: Date.now(),
     modified: Date.now(),
-    status: uploadStatus.UPLOADING,
+    status: generalStatus.UPLOADING,
     data: {
       originalName: req.file.originalname,
     },
@@ -85,7 +85,7 @@ app.put('/upload-file', upload.single('file'), async (req, res) => {
   let responseS3;
   try {
     responseS3 = await uploader(req.file);
-    record.status = uploadStatus.UPLOADED;
+    record.status = generalStatus.UPLOADED;
     record.modified = Date.now();
     record.data = {
       signedUrl: responseS3.signedOriginalUrl,
@@ -100,7 +100,7 @@ app.put('/upload-file', upload.single('file'), async (req, res) => {
     await putDynamoRecord(TABLE, record);
     await sendSQS(QUEUE, { session_id, unique_id, key: record.data.key }, messageTypes.INFO);
   } catch (err) {
-    record.status = uploadStatus.ERRORED;
+    record.status = generalStatus.ERRORED;
     record.data = {
       main: 'Error in Upload',
       message: err.message,
@@ -133,15 +133,15 @@ app.delete('/delete-entry', async (req, res) => {
   const unique_id = req.body.unique_id;
   const key = req.body.key;
 
-  console.log({ session_id, unique_id, key });
-
-  if (!session_id || !unique_id || !key) {
+  if (!session_id || !unique_id) {
     return res.status(500).json({ error: 'parameter(s) missing' });
   }
 
   try {
     await deleteDynamoRecord(TABLE, session_id, unique_id);
-    await deleteS3File(BUCKET, key);
+    if (key) {
+      await deleteS3File(BUCKET, key);
+    }
     const sessionData = await sessionIdQuery(TABLE, session_id);
     return res.status(200).json({ sessionData });
   } catch (err) {
@@ -151,7 +151,6 @@ app.delete('/delete-entry', async (req, res) => {
 });
 
 app.post('/initiateConversion', async (req, res) => {
-  const layersValue = req.body.layersValue;
   const typeValue = req.body.typeValue;
   const uploadRow = req.body.uploadRow;
   const session_id = req.body.sessionId;
@@ -163,10 +162,9 @@ app.post('/initiateConversion', async (req, res) => {
     row_type: rowTypes.PRODUCT,
     created: Date.now(),
     modified: Date.now(),
-    status: productStatus.WAITING,
+    status: generalStatus.WAITING,
     data: {
       originalName: uploadRow.data.originalName,
-      layersValue,
       typeValue,
     },
   };
@@ -176,7 +174,7 @@ app.post('/initiateConversion', async (req, res) => {
     await putDynamoRecord(TABLE, record);
     await sendSQS(
       QUEUE,
-      { session_id, unique_id, key: uploadRow.data.key, layersValue, typeValue },
+      { session_id, unique_id, key: uploadRow.data.key, typeValue },
       messageTypes.CONVERT,
     );
     sessionData = await sessionIdQuery(TABLE, session_id);

@@ -3,8 +3,7 @@ const mkdirp = require('mkdirp');
 const spawn = require('child_process').spawn;
 const { ogrDrivers } = require('../lookup/ogrDrivers.js');
 
-exports.convertUsingOgr = (workingFolder, likelyFile, key, layersValue, typeValue) => {
-  // todo uh oh im not using layers?
+exports.convertUsingOgr = (workingFolder, likelyFile, key, typeValue) => {
   const ext = lookupExt(typeValue);
   const convert = lookupDesc(typeValue);
   const plainKey = uuid().slice(0, 6) + key.slice(6).replace('.zip', '');
@@ -44,6 +43,10 @@ exports.convertUsingOgr = (workingFolder, likelyFile, key, layersValue, typeValu
     proc.on('close', code => {
       console.log(`completed gathering ogrinfo.`);
       console.log('code', { code });
+      console.log(typeof code);
+      if (code !== 0) {
+        return reject('Error in Conversion:');
+      }
       return resolve([outputFolder.slice(0, -1), zipPath, zipFileName]);
     });
   });

@@ -11,9 +11,6 @@ export function ConvertModal({
 }) {
   const [spinnerIsVisible, updateSpinnerIsVisibile] = useState(false);
   const [typeValue, updateTypeValue] = useState('');
-  const [layersValue, updateLayersValue] = useState([]);
-
-  const uploadLayers = mapLayers(convertModalInfo.info);
 
   async function runConversion() {
     updateSpinnerIsVisibile(true);
@@ -21,7 +18,6 @@ export function ConvertModal({
     try {
       const response = await axios.post('/initiateConversion', {
         typeValue,
-        layersValue,
         uploadRow: convertModalInfo,
         sessionId: window.localStorage.sessionId,
       });
@@ -32,7 +28,6 @@ export function ConvertModal({
       console.error(err);
       alert('Unable to begin file conversion');
     } finally {
-      updateLayersValue([]);
       updateTypeValue('');
       updateSpinnerIsVisibile(false);
     }
@@ -40,10 +35,6 @@ export function ConvertModal({
 
   function changeType(e, { value }) {
     updateTypeValue(value);
-  }
-
-  function changeLayer(e, { value }) {
-    updateLayersValue(value);
   }
 
   return (
@@ -67,19 +58,6 @@ export function ConvertModal({
           value={typeValue}
         />
         <br />
-        <Modal.Description>Choose Layers:</Modal.Description>
-        <Dropdown
-          onChange={changeLayer}
-          clearable
-          fluid
-          multiple
-          selection
-          placeholder="Choose Layer(s):"
-          options={uploadLayers}
-          value={layersValue}
-        />
-        <br />
-        <p>TODO: Warn if choosing an output that only allows one layer.</p>
       </Modal.Content>
       <Modal.Actions>
         {spinnerIsVisible ? (
@@ -100,13 +78,3 @@ export function ConvertModal({
 }
 
 export default ConvertModal;
-
-function mapLayers(info) {
-  return (info || []).map((item, index) => {
-    return {
-      key: index,
-      value: item.name,
-      text: `${item.name} - ${item.type} - ${item.count}`,
-    };
-  });
-}
