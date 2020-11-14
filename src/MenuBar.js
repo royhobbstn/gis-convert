@@ -13,9 +13,7 @@ export const MenuBar = () => {
       <Menu>
         <Menu.Item header>Convert Geospatial Files</Menu.Item>
         <Menu.Item position="right">
-          <Button primary onClick={() => updateAboutModalOpen(true)}>
-            About
-          </Button>
+          <Button onClick={() => updateAboutModalOpen(true)}>About</Button>
         </Menu.Item>
       </Menu>
     </React.Fragment>
