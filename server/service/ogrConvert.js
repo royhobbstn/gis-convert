@@ -43,9 +43,8 @@ exports.convertUsingOgr = (workingFolder, likelyFile, key, typeValue) => {
     proc.on('close', code => {
       console.log(`completed gathering ogrinfo.`);
       console.log('code', { code });
-      console.log(typeof code);
       if (code !== 0) {
-        return reject('Error in Conversion:');
+        return reject('Error in Conversion.');
       }
       return resolve([outputFolder.slice(0, -1), zipPath, zipFileName]);
     });

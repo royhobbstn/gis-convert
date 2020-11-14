@@ -28,22 +28,30 @@ setInterval(async () => {
   if (busy) {
     return;
   }
-
+  const message = await readMessage(QUEUE);
+  if (!message) {
+    return;
+  }
+  busy = true;
+  // delete message immediately.  will never retry.
+  const deleteParams = {
+    ReceiptHandle: message.Messages[0].ReceiptHandle,
+    QueueUrl: QUEUE,
+  };
+  await deleteMessage(deleteParams);
+  const ctx = {};
+  ctx.message = message;
   try {
-    const message = await readMessage(QUEUE);
-    if (!message) {
-      return;
-    }
-
-    busy = true;
-    await processMessage(message);
-    const deleteParams = {
-      ReceiptHandle: message.Messages[0].ReceiptHandle,
-      QueueUrl: QUEUE,
-    };
-    await deleteMessage(deleteParams);
-  } catch (e) {
-    console.error(e);
+    await processMessage(ctx);
+  } catch (err) {
+    console.error(err);
+    ctx.record.data.message = err.message;
+    ctx.record.status = generalStatus.ERROR;
+    ctx.record.modified = Date.now();
+    console.log('putting error record');
+    putDynamoRecord(TABLE, ctx.record).catch(err => {
+      console.error(err);
+    });
   } finally {
     busy = false;
     // TODO clean up temporary directory
@@ -85,7 +93,7 @@ app.put('/upload-file', upload.single('file'), async (req, res) => {
   let responseS3;
   try {
     responseS3 = await uploader(req.file);
-    record.status = generalStatus.UPLOADED;
+    record.status = generalStatus.WAITING;
     record.modified = Date.now();
     record.data = {
       signedUrl: responseS3.signedOriginalUrl,

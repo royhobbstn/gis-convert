@@ -48,7 +48,7 @@ export function UploadControl({ updateData }) {
   }
 
   return (
-    <div style={{ marginBottom: '20px' }}>
+    <div style={{ margin: '20px 0 10px 0' }}>
       <Button
         style={{
           marginLeft: 'auto',

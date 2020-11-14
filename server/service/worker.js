@@ -10,8 +10,8 @@ const { fetchDynamoRecord, putDynamoRecord } = require('./dynamo.js');
 const TABLE = config.get('Dynamo.table');
 const BUCKET = config.get('Buckets.mainBucket');
 
-exports.processMessage = async incomingPayload => {
-  const message = incomingPayload.Messages[0];
+exports.processMessage = async ctx => {
+  const message = ctx.message.Messages[0];
   const attributes = message.MessageAttributes;
   const messageType = attributes.messageType.StringValue;
   const body = JSON.parse(message.Body);
@@ -20,143 +20,69 @@ exports.processMessage = async incomingPayload => {
   mkdirp.sync(workingFolder);
 
   if (messageType === messageTypes.INFO) {
-    await processGeoFileInfo(workingFolder, body);
+    await processGeoFileInfo(ctx, workingFolder, body);
   } else if (messageType === messageTypes.CONVERT) {
-    await processGeoFileConversion(workingFolder, body);
+    await processGeoFileConversion(ctx, workingFolder, body);
   } else {
     throw new Error(`Unexpected MessageType: ${messageType}`);
   }
 };
 
-async function processGeoFileInfo(workingFolder, body) {
-  try {
-    const sessionId = body.session_id;
-    const uniqueId = body.unique_id;
-    const key = body.key;
+async function processGeoFileInfo(ctx, workingFolder, body) {
+  const [likelyFile, key] = await setTable(ctx, workingFolder, body);
 
-    // fetch DYNAMO record
-    const response = await fetchDynamoRecord(TABLE, sessionId, uniqueId);
-    const record = response.Items[0];
+  // send to ogr-info command line
+  const ogrOutput = await getOgrInfo(likelyFile);
 
-    // update status in Dynamo from UPLOADED to BUSY
-    record.status = generalStatus.BUSY;
-    record.modified = Date.now();
-    await putDynamoRecord(TABLE, record);
+  // parseOgrInfo into JSON.
+  const layers = parseOgrOutput(ogrOutput);
 
-    // load file from S3
-    await downloadFileFromS3(BUCKET, key, workingFolder);
-
-    // extract file down from zip if needed.
-    const lastFourChars = key.slice(-4);
-    let likelyFile = workingFolder + key;
-    // A BIG TODO: use /vsizip/ and /vsis3/ in place of below
-    if (lastFourChars === '.zip') {
-      extractZip(workingFolder, key);
-      collapseUnzippedDir(workingFolder);
-      likelyFile = findLikelyFile(workingFolder);
-    }
-
-    // send to ogr-info command line
-    const ogrOutput = await getOgrInfo(likelyFile);
-
-    // parseOgrInfo into JSON.
-    const layers = parseOgrOutput(ogrOutput);
-
-    // Save Info to Dynamo and update status (use same JSON as earlier to avoid re-calling)
-    record.info = layers;
-    record.status = generalStatus.READY;
-    record.modified = Date.now();
-    await putDynamoRecord(TABLE, record);
-  } catch (err) {
-    console.error(err);
-    record.data = {
-      main: 'Error in Info',
-      message: err.message,
-    };
-    record.modified = Date.now();
-    await putDynamoRecord(TABLE, record);
-    putDynamoRecord(TABLE, record).catch(err => {
-      console.error(err);
-    });
-  }
+  // Save Info to Dynamo and update status (use same JSON as earlier to avoid re-calling)
+  ctx.record.info = layers;
+  ctx.record.status = generalStatus.READY;
+  ctx.record.modified = Date.now();
+  await putDynamoRecord(TABLE, ctx.record);
 }
 
-async function processGeoFileConversion(workingFolder, body) {
-  const sessionId = body.session_id;
-  const uniqueId = body.unique_id;
-  const key = body.key;
+async function processGeoFileConversion(ctx, workingFolder, body) {
+  const [likelyFile, key] = await setTable(ctx, workingFolder, body);
 
-  // fetch DYNAMO record
-  const response = await fetchDynamoRecord(TABLE, sessionId, uniqueId);
-  const record = response.Items[0];
+  const [outputFolder, zipPath, plainKey] = await convertUsingOgr(
+    workingFolder,
+    likelyFile,
+    key,
+    body.typeValue,
+  );
 
-  // update status in Dynamo from UPLOADED to BUSY
-  record.status = generalStatus.BUSY;
-  record.modified = Date.now();
-  await putDynamoRecord(TABLE, record);
+  zipDirectory(workingFolder, outputFolder, zipPath);
+  await putZipFileToS3(BUCKET, plainKey, zipPath);
 
-  // load file from S3
-  await downloadFileFromS3(BUCKET, key, workingFolder);
+  // get signed URL
+  const hours8 = 60 * 60 * 8;
+  const signedUrl = await getSignedUrl(BUCKET, plainKey, hours8);
 
-  // extract file down from zip if needed.
-  const lastFourChars = key.slice(-4);
-  let likelyFile = workingFolder + key;
-
-  if (lastFourChars === '.zip') {
-    extractZip(workingFolder, key);
-    collapseUnzippedDir(workingFolder);
-    likelyFile = findLikelyFile(workingFolder);
-  }
-
-  try {
-    const [outputFolder, zipPath, plainKey] = await convertUsingOgr(
-      workingFolder,
-      likelyFile,
-      key,
-      body.typeValue,
-    );
-
-    zipDirectory(workingFolder, outputFolder, zipPath);
-    await putZipFileToS3(BUCKET, plainKey, zipPath);
-
-    // get signed URL
-    const hours8 = 60 * 60 * 8;
-    const signedUrl = await getSignedUrl(BUCKET, plainKey, hours8);
-
-    // attach info to dynamo record
-    record.data.key = plainKey;
-    record.data.signedUrl = signedUrl;
-    record.status = generalStatus.READY;
-    record.modified = Date.now();
-    await putDynamoRecord(TABLE, record);
-  } catch (err) {
-    console.error(err);
-    record.data = {
-      main: 'Error in Upload',
-      message: err.message,
-    };
-    record.modified = Date.now();
-    await putDynamoRecord(TABLE, record);
-    putDynamoRecord(TABLE, record).catch(err => {
-      console.error(err);
-    });
-  }
+  // attach info to dynamo record
+  ctx.record.data.key = plainKey;
+  ctx.record.data.signedUrl = signedUrl;
+  ctx.record.status = generalStatus.READY;
+  ctx.record.modified = Date.now();
+  await putDynamoRecord(TABLE, ctx.record);
 }
 
 // download and unzip file in preparation for ogrinfo or ogr2ogr
-async function setTable(workingFolder, body) {
+async function setTable(ctx, workingFolder, body) {
   const sessionId = body.session_id;
   const uniqueId = body.unique_id;
   const key = body.key;
 
   // fetch DYNAMO record
   const response = await fetchDynamoRecord(TABLE, sessionId, uniqueId);
-  const record = response.Items[0];
+  ctx.record = response.Items[0];
 
   // update status in Dynamo from Uploaded to SCANNING
-  record.status = generalStatus.BUSY;
-  record.modified = Date.now();
-  await putDynamoRecord(TABLE, record);
+  ctx.record.status = generalStatus.BUSY;
+  ctx.record.modified = Date.now();
+  await putDynamoRecord(TABLE, ctx.record);
 
   // load file from S3
   await downloadFileFromS3(BUCKET, key, workingFolder);
@@ -170,4 +96,6 @@ async function setTable(workingFolder, body) {
     collapseUnzippedDir(workingFolder);
     likelyFile = findLikelyFile(workingFolder);
   }
+
+  return [likelyFile, key];
 }
