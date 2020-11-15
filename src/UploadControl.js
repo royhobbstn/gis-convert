@@ -53,8 +53,8 @@ export function UploadControl({ updateData }) {
         style={{
           marginLeft: 'auto',
           marginRight: 'auto',
-          marginTop: '2%',
-          marginBottom: '4%',
+          marginTop: '30px',
+          marginBottom: '20px',
           textAlign: 'center',
           display: 'block',
         }}

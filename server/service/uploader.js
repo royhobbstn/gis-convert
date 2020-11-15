@@ -27,11 +27,11 @@ exports.uploader = async file => {
   const originalKey = `${uniqueId}_${file.originalname}`;
   const originalFile = await uploadToS3(bucket, originalKey, file.buffer, file.mimetype);
 
-  const hours8 = 60 * 60 * 8;
+  const hours24 = 60 * 60 * 24;
   const signedOriginalUrl = s3.getSignedUrl('getObject', {
     Bucket: originalFile.Bucket,
     Key: originalKey,
-    Expires: hours8,
+    Expires: hours24,
   });
 
   return {

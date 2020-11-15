@@ -35,6 +35,7 @@ const BUCKET = config.get('Buckets.mainBucket');
 const LOGS_BUCKET = config.get('Buckets.logsBucket');
 
 app.use(bodyParser.json());
+app.use(express.static('build'));
 
 createDirectories([tempFolder, logsFolder]);
 
@@ -78,8 +79,8 @@ setInterval(async () => {
   await refreshLogfile(ctx);
 
   // create signed URL once.
-  const hours8 = 60 * 60 * 8;
-  const signedUrl = getSignedUrl(LOGS_BUCKET, logfile, hours8);
+  const hours24 = 60 * 60 * 24;
+  const signedUrl = getSignedUrl(LOGS_BUCKET, logfile, hours24);
 
   // add signed url to dynamo record
   ctx.loglink = signedUrl;
@@ -124,6 +125,7 @@ app.put('/upload-file', upload.single('file'), async (req, res) => {
     row_type: rowTypes.UPLOAD,
     created: Date.now(),
     modified: Date.now(),
+    expires: Math.floor((Date.now() + 1000 * 60 * 60 * 24) / 1000), // one day in MS
     status: generalStatus.UPLOADING,
     data: {
       originalName: req.file.originalname,
@@ -222,6 +224,7 @@ app.post('/initiateConversion', async (req, res) => {
     row_type: rowTypes.PRODUCT,
     created: Date.now(),
     modified: Date.now(),
+    expires: Math.floor((Date.now() + 1000 * 60 * 60 * 24) / 1000), // one day in MS
     status: generalStatus.WAITING,
     data: {
       originalName: uploadRow.data.originalName,

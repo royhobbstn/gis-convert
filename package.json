@@ -17,8 +17,10 @@
     "web-vitals": "^0.2.4"
   },
   "scripts": {
-    "server-dev": "NODE_ENV=development AWS_PROFILE=admin nodemon node server/index.js",
-    "server-prod": "NODE_ENV=production AWS_PROFILE=admin nodemon node server/index.js",
+    "server-dev": "NODE_ENV=development AWS_PROFILE=admin nodemon --ignore 'logfiles/' --ignore 'tempGeoFiles/' node server/index.js",
+    "server-prod": "NODE_ENV=production AWS_PROFILE=admin nodemon --ignore 'logfiles/' --ignore 'tempGeoFiles/' node server/index.js",
+    "built-dev": "npm run build && NODE_ENV=development AWS_PROFILE=admin node server/index.js",
+    "built-prod": "npm run build && NODE_ENV=production AWS_PROFILE=admin node server/index.js",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",

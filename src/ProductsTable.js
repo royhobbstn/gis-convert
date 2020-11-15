@@ -86,7 +86,7 @@ export function ProductsTable({ data, updateData }) {
                 <Table.Cell width={1} style={{ textAlign: 'center' }}>
                   {row.loglink ? (
                     <a href={row.loglink} target="_blank" rel="noreferrer">
-                      <Icon fitted name="linkify" />
+                      <Icon fitted name="sticky note outline" />
                     </a>
                   ) : null}
                 </Table.Cell>
@@ -98,7 +98,7 @@ export function ProductsTable({ data, updateData }) {
                       <Icon
                         style={{ color: 'grey' }}
                         fitted
-                        name="trash"
+                        name="trash alternate outline"
                         onClick={() => deleteUpload(row.unique_id, row.data.key)}
                       />
                     )}

@@ -7,10 +7,26 @@ import { UploadControl } from './UploadControl';
 import { MenuBar } from './MenuBar';
 
 let heartbeat = null;
+let clearOldRecordsCheck = null;
 
 function App() {
   const [data, updateData] = useState([]);
   const [uploads, products] = parseData(data);
+
+  useEffect(() => {
+    if (!clearOldRecordsCheck) {
+      clearOldRecordsCheck = window.setInterval(async () => {
+        const token = window.localStorage.getItem('sessionId');
+        let response;
+        try {
+          response = await axios.post(`/data`, { token });
+          updateData(response.data.sessionData.Items);
+        } catch (err) {
+          console.error(err);
+        }
+      }, 3600000); // every hour
+    }
+  }, [data, updateData]);
 
   useEffect(() => {
     if (statusPending(data)) {

@@ -70,8 +70,8 @@ async function processGeoFileConversion(ctx, workingFolder, body) {
   await putZipFileToS3(ctx, BUCKET, plainKey, zipPath);
 
   // get signed URL
-  const hours8 = 60 * 60 * 8;
-  const signedUrl = await getSignedUrl(BUCKET, plainKey, hours8);
+  const hours24 = 60 * 60 * 24;
+  const signedUrl = await getSignedUrl(BUCKET, plainKey, hours24);
 
   // attach info to dynamo record
   ctx.record.data.key = plainKey;

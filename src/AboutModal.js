@@ -46,7 +46,7 @@ export function AboutModal({ aboutModalOpen, updateAboutModalOpen }) {
           </p>
           <p>
             If you navigate away from the page and then return, your identity will be remembered and
-            your files will still be available to you. All uploads and converted products expire 8
+            your files will still be available to you. All uploads and converted products expire 24
             hours after creation, at which point they will be deleted from the server.
           </p>
           <p>
