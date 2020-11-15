@@ -1,3 +1,5 @@
+const fs = require('fs');
+const mkdirp = require('mkdirp');
 const express = require('express');
 const config = require('config');
 const bodyParser = require('body-parser');
@@ -5,19 +7,25 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 const { v4: uuid } = require('uuid');
-const { generalStatus, rowTypes, messageTypes } = require('./service/constants.js');
-
+const { generalStatus, rowTypes, messageTypes, logsFolder } = require('./service/constants.js');
 const { uploader } = require('./service/uploader');
 const { putDynamoRecord, sessionIdQuery, deleteDynamoRecord } = require('./service/dynamo');
 const { sendSQS, readMessage, deleteMessage } = require('./service/sqs');
 const { processMessage } = require('./service/worker');
-const { deleteS3File } = require('./service/s3.js');
+const { deleteS3File, getSignedUrl } = require('./service/s3.js');
+const {
+  generateRef,
+  createInstanceLogger,
+  getUniqueLogfileName,
+  refreshLogfile,
+} = require('./service/logger');
 
 const app = express();
 const port = 4000;
 const TABLE = config.get('Dynamo.table');
 const QUEUE = config.get('SQS.mainQueueUrl');
 const BUCKET = config.get('Buckets.mainBucket');
+const LOGS_BUCKET = config.get('Buckets.logsBucket');
 
 app.use(bodyParser.json());
 
@@ -41,17 +49,46 @@ setInterval(async () => {
   await deleteMessage(deleteParams);
   const ctx = {};
   ctx.message = message;
+
+  const directoryId = generateRef(6);
+  const logfile = getUniqueLogfileName(
+    message.Messages[0].MessageAttributes.messageType.StringValue,
+  );
+  const logsFolderUnique = logsFolder + directoryId;
+  mkdirp.sync(logsFolderUnique);
+  const logpath = `${logsFolderUnique}/${logfile}`;
+  const log = createInstanceLogger(logpath);
+  ctx.log = log;
+  ctx.logsFolderUnique = logsFolderUnique; // delete this in cleanup
+  ctx.logfile = logfile;
+  ctx.logpath = logpath;
+
+  // first logfile message is here.  we know a file now exists.
+  ctx.log.info('message received', message);
+
+  await refreshLogfile(ctx);
+
+  // create signed URL once.
+  const hours8 = 60 * 60 * 8;
+  const signedUrl = getSignedUrl(LOGS_BUCKET, logfile, hours8);
+
+  // add signed url to dynamo record
+  ctx.loglink = signedUrl;
+
   try {
     await processMessage(ctx);
   } catch (err) {
-    console.error(err);
+    ctx.log.error(`Message: ${err.message} Stack: ${err.stack}`);
     ctx.record.data.message = err.message;
     ctx.record.status = generalStatus.ERROR;
     ctx.record.modified = Date.now();
-    console.log('putting error record');
-    putDynamoRecord(TABLE, ctx.record).catch(err => {
-      console.error(err);
-    });
+    ctx.record.loglink = ctx.loglink;
+    ctx.log.info('putting error record to dynamo', { record: ctx.record });
+    putDynamoRecord(TABLE, ctx.record)
+      .then(() => refreshLogfile(ctx))
+      .catch(err => {
+        ctx.log.error(`Message: ${err.message} Stack: ${err.stack}`);
+      });
   } finally {
     busy = false;
     // TODO clean up temporary directory

@@ -39,7 +39,9 @@ exports.findLikelyFile = workingFolder => {
   throw new Error('Could not find eligible file.');
 };
 
-exports.getOgrInfo = filePath => {
+exports.getOgrInfo = (ctx, filePath) => {
+  ctx.log.info(`Running ogrinfo`);
+
   let textOutput = '';
 
   return new Promise((resolve, reject) => {
@@ -47,7 +49,7 @@ exports.getOgrInfo = filePath => {
     const args = ['-ro', '-al', '-so', filePath];
 
     const command = `${application} ${args.join(' ')}`;
-    console.log(`running: ${command}`);
+    ctx.log.info(`running: ${command}`);
 
     const proc = spawn(application, args);
 
@@ -56,24 +58,29 @@ exports.getOgrInfo = filePath => {
     });
 
     proc.stderr.on('data', data => {
-      // console.log(data.toString());
+      ctx.log.info(data.toString());
     });
 
     proc.on('error', err => {
-      console.error('Error', { err: err.message, stack: err.stack });
+      ctx.log.error('Error', { err: err.message, stack: err.stack });
       return reject(err);
     });
 
     proc.on('close', code => {
-      console.log(`completed gathering ogrinfo.`);
-      //   console.log('command', { command });
-      //   console.log('ogrinfo', { textOutput });
+      ctx.log.info(`completed gathering ogrinfo.`);
+      ctx.log.info('code', { code });
+      if (code !== 0) {
+        return reject('Error in ogrinfo.');
+      }
+      ctx.log.info(textOutput);
       return resolve(textOutput);
     });
   });
 };
 
-exports.parseOgrOutput = textOutput => {
+exports.parseOgrOutput = (ctx, textOutput) => {
+  ctx.log.info(`Parsing output from ogrinfo`);
+
   const layers = [];
   let cursor = 0;
 
@@ -98,6 +105,8 @@ exports.parseOgrOutput = textOutput => {
     layers.push({ type: geometry, name: layerName, count: Number(featureCount) });
     cursor = brFC;
   } while (true);
+
+  ctx.log.info('layers: ', { layers });
 
   return layers;
 };

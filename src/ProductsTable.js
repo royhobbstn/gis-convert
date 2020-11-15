@@ -61,6 +61,7 @@ export function ProductsTable({ data, updateData }) {
             <Table.HeaderCell>Output Filename</Table.HeaderCell>
             <Table.HeaderCell>Type</Table.HeaderCell>
             <Table.HeaderCell style={{ textAlign: 'center' }}>Status</Table.HeaderCell>
+            <Table.HeaderCell style={{ textAlign: 'center' }}>Log</Table.HeaderCell>
             <Table.HeaderCell></Table.HeaderCell>
           </Table.Row>
         </Table.Header>
@@ -76,12 +77,19 @@ export function ProductsTable({ data, updateData }) {
                     </a>
                   ) : null}
                 </Table.Cell>
-                <Table.Cell width={2}>
+                <Table.Cell width={3}>
                   {new Date(Number(row.created)).toLocaleTimeString()}
                 </Table.Cell>
                 <Table.Cell width={4}>{row.data.key}</Table.Cell>
                 <Table.Cell width={1}>{row.data.typeValue}</Table.Cell>
                 <Table.Cell width={1}>{row.status}</Table.Cell>
+                <Table.Cell width={1} style={{ textAlign: 'center' }}>
+                  {row.loglink ? (
+                    <a href={row.loglink} target="_blank" rel="noreferrer">
+                      <Icon fitted name="linkify" />
+                    </a>
+                  ) : null}
+                </Table.Cell>
                 <Table.Cell width={1} style={{ textAlign: 'center' }}>
                   <div role="button" style={{ cursor: 'pointer' }}>
                     {rowsBeingDeleted.includes(row.unique_id) ? (

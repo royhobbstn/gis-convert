@@ -94,3 +94,26 @@ exports.getSignedUrl = (bucket, key, expiration) => {
   });
   return signedUrl;
 };
+
+exports.putTextToS3 = function (ctx, bucketName, keyName, text, contentType) {
+  return new Promise((resolve, reject) => {
+    const objectParams = {
+      Bucket: bucketName,
+      Key: keyName,
+      Body: text,
+      ContentType: contentType,
+    };
+
+    const uploadPromise = S3.putObject(objectParams).promise();
+    uploadPromise
+      .then(data => {
+        ctx.log.info(`Successfully uploaded data to s3`);
+        ctx.log.info('upload response', { data });
+        return resolve();
+      })
+      .catch(err => {
+        ctx.log.error('Error', { err: err.message, stack: err.stack });
+        return reject(err);
+      });
+  });
+};

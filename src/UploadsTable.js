@@ -89,6 +89,7 @@ export function UploadsTable({ data, updateData }) {
             <Table.HeaderCell style={{ textAlign: 'center' }}>Status</Table.HeaderCell>
             <Table.HeaderCell style={{ textAlign: 'center' }}>Convert</Table.HeaderCell>
             <Table.HeaderCell style={{ textAlign: 'center' }}>Info</Table.HeaderCell>
+            <Table.HeaderCell style={{ textAlign: 'center' }}>Log</Table.HeaderCell>
             <Table.HeaderCell></Table.HeaderCell>
           </Table.Row>
         </Table.Header>
@@ -116,11 +117,18 @@ export function UploadsTable({ data, updateData }) {
                     </Button>
                   ) : null}
                 </Table.Cell>
-                <Table.Cell width={2} style={{ textAlign: 'center' }}>
+                <Table.Cell width={1} style={{ textAlign: 'center' }}>
                   {row.status === 'READY' ? (
                     <Button compact onClick={() => updateInfoModal(row.info)}>
                       Info
                     </Button>
+                  ) : null}
+                </Table.Cell>
+                <Table.Cell width={1} style={{ textAlign: 'center' }}>
+                  {row.loglink ? (
+                    <a href={row.loglink} target="_blank" rel="noreferrer">
+                      <Icon fitted name="linkify" />
+                    </a>
                   ) : null}
                 </Table.Cell>
                 <Table.Cell width={1} style={{ textAlign: 'center' }}>

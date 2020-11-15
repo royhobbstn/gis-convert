@@ -1,6 +1,7 @@
 //
 
 exports.tempFolder = '/tempGeoFiles/';
+exports.logsFolder = '/logfiles/';
 
 exports.generalStatus = {
   UPLOADING: 'UPLOADING', // upload table only
@@ -19,3 +20,6 @@ exports.rowTypes = {
   UPLOAD: 'upload',
   PRODUCT: 'product',
 };
+
+// length of logfile entropy
+exports.logfileNameLength = 5;

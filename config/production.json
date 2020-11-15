@@ -7,6 +7,7 @@
     "mainQueueUrl": "https://sqs.us-east-2.amazonaws.com/000009394762/processFile"
   },
   "Buckets": {
-    "mainBucket": "upload-gis-file"
+    "mainBucket": "upload-gis-file",
+    "logsBucket": "upload-gis-file-logs"
   }
 }
