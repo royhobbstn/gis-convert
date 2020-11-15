@@ -44,9 +44,9 @@ exports.deleteS3File = (bucket, key) => {
   });
 };
 
-exports.putZipFileToS3 = function (bucket, key, filePathToUpload) {
+exports.putZipFileToS3 = function (ctx, bucket, key, filePathToUpload) {
   return new Promise((resolve, reject) => {
-    console.log(
+    ctx.log.info(
       `uploading file to s3 (${filePathToUpload} as s3://${bucket}/${key}), please wait...`,
     );
 
@@ -72,15 +72,15 @@ exports.putZipFileToS3 = function (bucket, key, filePathToUpload) {
 
     promise
       .then(result => {
-        console.log(
+        ctx.log.info(
           `uploading (${filePathToUpload} as s3://${bucket}/${key}) completed successfully.`,
         );
-        console.log('result', result);
+        ctx.log.info('result', result);
         return resolve();
       })
       .catch(err => {
-        console.error(`upload (${filePathToUpload} as s3://${bucket}/${key}) failed.`);
-        console.error(`Error: ${err.message}, ${err.stack}`);
+        ctx.log.error(`upload (${filePathToUpload} as s3://${bucket}/${key}) failed.`);
+        ctx.log.error(`Error: ${err.message}, ${err.stack}`);
         return reject(err);
       });
   });

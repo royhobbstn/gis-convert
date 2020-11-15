@@ -1,7 +1,7 @@
 //
 
-exports.tempFolder = '/tempGeoFiles/';
-exports.logsFolder = '/logfiles/';
+exports.tempFolder = './tempGeoFiles/';
+exports.logsFolder = './logfiles/';
 
 exports.generalStatus = {
   UPLOADING: 'UPLOADING', // upload table only

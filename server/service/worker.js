@@ -47,11 +47,10 @@ async function processGeoFileInfo(ctx, workingFolder, body) {
   ctx.record.info = layers;
   ctx.record.status = generalStatus.READY;
   ctx.record.modified = Date.now();
-  refreshLogfile(ctx).catch(err => {
-    ctx.log.error(`Message: ${err.message} Stack: ${err.stack}`);
-  });
+
   await putDynamoRecord(TABLE, ctx.record);
   ctx.log.info('Record status: READY successfully updated.');
+  await refreshLogfile(ctx);
 }
 
 async function processGeoFileConversion(ctx, workingFolder, body) {
@@ -67,8 +66,8 @@ async function processGeoFileConversion(ctx, workingFolder, body) {
     body.typeValue,
   );
 
-  zipDirectory(workingFolder, outputFolder, zipPath);
-  await putZipFileToS3(BUCKET, plainKey, zipPath);
+  zipDirectory(ctx, workingFolder, outputFolder, zipPath);
+  await putZipFileToS3(ctx, BUCKET, plainKey, zipPath);
 
   // get signed URL
   const hours8 = 60 * 60 * 8;
@@ -79,10 +78,10 @@ async function processGeoFileConversion(ctx, workingFolder, body) {
   ctx.record.data.signedUrl = signedUrl;
   ctx.record.status = generalStatus.READY;
   ctx.record.modified = Date.now();
-  refreshLogfile(ctx).catch(err => {
-    ctx.log.error(`Message: ${err.message} Stack: ${err.stack}`);
-  });
+
   await putDynamoRecord(TABLE, ctx.record);
+  ctx.log.info('Record status: READY successfully updated.');
+  await refreshLogfile(ctx);
 }
 
 // download and unzip file in preparation for ogrinfo or ogr2ogr
@@ -117,9 +116,9 @@ async function setTable(ctx, workingFolder, body) {
 
   if (lastFourChars === '.zip') {
     ctx.log.info(`File is a zip file.  Extracting.`);
-    extractZip(workingFolder, key);
+    extractZip(ctx, workingFolder, key);
     ctx.log.info(`Collapsing directories.`);
-    collapseUnzippedDir(workingFolder);
+    collapseUnzippedDir(ctx, workingFolder);
     ctx.log.info(`Finding most likely file.`);
     likelyFile = findLikelyFile(workingFolder);
   }

@@ -7,12 +7,19 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 const { v4: uuid } = require('uuid');
-const { generalStatus, rowTypes, messageTypes, logsFolder } = require('./service/constants.js');
+const {
+  generalStatus,
+  rowTypes,
+  messageTypes,
+  logsFolder,
+  tempFolder,
+} = require('./service/constants.js');
 const { uploader } = require('./service/uploader');
 const { putDynamoRecord, sessionIdQuery, deleteDynamoRecord } = require('./service/dynamo');
 const { sendSQS, readMessage, deleteMessage } = require('./service/sqs');
 const { processMessage } = require('./service/worker');
 const { deleteS3File, getSignedUrl } = require('./service/s3.js');
+const { cleanDirectory, createDirectories } = require('./service/filesystem');
 const {
   generateRef,
   createInstanceLogger,
@@ -28,6 +35,8 @@ const BUCKET = config.get('Buckets.mainBucket');
 const LOGS_BUCKET = config.get('Buckets.logsBucket');
 
 app.use(bodyParser.json());
+
+createDirectories([tempFolder, logsFolder]);
 
 // set up worker
 let busy = false;
@@ -84,14 +93,20 @@ setInterval(async () => {
     ctx.record.modified = Date.now();
     ctx.record.loglink = ctx.loglink;
     ctx.log.info('putting error record to dynamo', { record: ctx.record });
-    putDynamoRecord(TABLE, ctx.record)
-      .then(() => refreshLogfile(ctx))
-      .catch(err => {
-        ctx.log.error(`Message: ${err.message} Stack: ${err.stack}`);
-      });
+    try {
+      await putDynamoRecord(TABLE, ctx.record);
+      await refreshLogfile(ctx);
+    } catch (err) {
+      console.error(`Message: ${err.message} Stack: ${err.stack}`);
+    }
   } finally {
     busy = false;
-    // TODO clean up temporary directory
+    if (ctx.logsFolderUnique) {
+      await cleanDirectory(ctx.logsFolderUnique);
+    }
+    if (ctx.workingFolder) {
+      await cleanDirectory(ctx.workingFolder);
+    }
   }
 }, 10000);
 

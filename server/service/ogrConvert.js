@@ -45,7 +45,7 @@ exports.convertUsingOgr = (ctx, workingFolder, likelyFile, key, typeValue) => {
     });
 
     proc.on('close', code => {
-      ctx.log.info(`completed gathering ogrinfo.`);
+      ctx.log.info(`completed conversion using ogr2ogr.`);
       ctx.log.info('code', { code });
       if (code !== 0) {
         return reject('Error in ogr2ogr.');

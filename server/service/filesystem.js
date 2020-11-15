@@ -1,30 +1,32 @@
 const fsExtra = require('fs-extra');
 const { execSync } = require('child_process');
 const fs = require('fs');
+const del = require('del');
+const mkdirp = require('mkdirp');
 
-exports.extractZip = (workingFolder, key) => {
+exports.extractZip = (ctx, workingFolder, key) => {
   try {
     const output = execSync(`unzip ${workingFolder}${key} -d ${workingFolder}`);
-    console.log('Zip Log: ' + output.toString());
-    console.log(`Success unzipping ${workingFolder}${key}`);
+    ctx.log.info('Zip Log: ' + output.toString());
+    ctx.log.info(`Success unzipping ${workingFolder}${key}`);
   } catch (e) {
-    console.log(`unzipping from ${workingFolder}${key} failed`);
+    ctx.log.error(`unzipping from ${workingFolder}${key} failed`);
     throw e;
   }
 };
 
-exports.zipDirectory = (navigateTo, outputRoot, zipPath) => {
+exports.zipDirectory = (ctx, navigateTo, outputRoot, zipPath) => {
   try {
-    const output = execSync(`cd ${navigateTo} && zip -r ${zipPath} ${outputRoot}`);
-    console.log('Zip Log: ' + output.toString());
-    console.log(`Success zipping ${outputRoot} to ${zipPath}`);
+    const output = execSync(`cd ${navigateTo} && zip -r ../.${zipPath} ${outputRoot}`);
+    ctx.log.info('Zip Log: ' + output.toString());
+    ctx.log.info(`Success zipping ${outputRoot} to ../.${zipPath}`);
   } catch (e) {
-    console.log(`Zipping folder ${outputRoot} to ${zipPath} failed`);
+    ctx.log.error(`Zipping ${outputRoot} to ../.${zipPath} failed`);
     throw e;
   }
 };
 
-exports.collapseUnzippedDir = workingFolder => {
+exports.collapseUnzippedDir = (ctx, workingFolder) => {
   const arrayOfFiles = fs.readdirSync(workingFolder);
   let movedFlag = false;
 
@@ -35,7 +37,7 @@ exports.collapseUnzippedDir = workingFolder => {
     if (isDir && !isGDB) {
       // move contents of this directory to workingFolder
       const subDirectory = `${workingFolder}${file}`;
-      console.log(`Moving contents of folder: ${subDirectory} into base folder: ${workingFolder}`);
+      ctx.log.info(`Moving contents of folder: ${subDirectory} into base folder: ${workingFolder}`);
       const arrayOfSubDirectoryFiles = fs.readdirSync(subDirectory);
 
       // add move-prefix to avoid potential filename collision with identical files (or identically named files) in the lower directory
@@ -48,7 +50,25 @@ exports.collapseUnzippedDir = workingFolder => {
   }
 
   if (movedFlag) {
-    return collapseUnzippedDir(workingFolder);
+    return collapseUnzippedDir(ctx, workingFolder);
   }
-  console.log('done collapsing');
+  ctx.log.info('done collapsing');
+};
+
+exports.cleanDirectory = async function (dir) {
+  // not using ctx here on purpose
+  try {
+    await del(dir, { force: true });
+    console.log('Deleted directory:', { dir });
+  } catch (err) {
+    console.error(`Error while deleting ${dir}.`, { error: err.message, stack: err.stack });
+  }
+};
+
+exports.createDirectories = async function (dirs) {
+  for (let dir of dirs) {
+    mkdirp.sync(dir);
+    console.log(`Created directory: ${dir}`);
+  }
+  console.log('Done creating staging directories.');
 };
