@@ -1,4 +1,6 @@
 const fs = require('fs');
+const http = require('http');
+const https = require('https');
 const mkdirp = require('mkdirp');
 const express = require('express');
 const config = require('config');
@@ -26,9 +28,9 @@ const {
   getUniqueLogfileName,
   refreshLogfile,
 } = require('./service/logger');
+const helmet = require('helmet');
 
 const app = express();
-const port = 4000;
 const TABLE = config.get('Dynamo.table');
 const QUEUE = config.get('SQS.mainQueueUrl');
 const BUCKET = config.get('Buckets.mainBucket');
@@ -36,6 +38,7 @@ const LOGS_BUCKET = config.get('Buckets.logsBucket');
 
 app.use(bodyParser.json());
 app.use(express.static('build'));
+app.use(helmet());
 
 createDirectories([tempFolder, logsFolder]);
 
@@ -249,6 +252,17 @@ app.post('/initiateConversion', async (req, res) => {
   return res.status(200).json({ sessionData });
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+// const privateKey = fs.readFileSync('sslcert/server.key', 'utf8');
+// const certificate = fs.readFileSync('sslcert/server.crt', 'utf8');
+
+// const credentials = { key: privateKey, cert: certificate };
+
+const httpServer = http.createServer(app);
+//  httpsServer = https.createServer(credentials, app);
+
+httpServer.listen(8080, () => {
+  console.log(`Example app listening at http://localhost:8080`);
 });
+// httpsServer.listen(8443, () => {
+//   console.log(`Example app listening at http://localhost:8443`);
+// });

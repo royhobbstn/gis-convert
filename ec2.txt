@@ -1,0 +1,10 @@
+fresh ec2 setup
+--------------
+sudo apt-get update && sudo apt-get install docker.io -y && sudo apt-get install awscli -y && aws configure
+
+sudo $(aws ecr get-login --no-include-email --region us-east-2)
+sudo docker pull 000009394762.dkr.ecr.us-east-2.amazonaws.com/gis-convert:latest
+sudo docker run --restart unless-stopped  --name gis-convert -v /etc/letsencrypt/archive/convert-geo.com:/ssl/docker -p 443:8443 -p 80:8080 -d -v $HOME/.aws/credentials:/root/.aws/credentials:ro 000009394762.dkr.ecr.us-east-2.amazonaws.com/gis-convert:latest
+
+t2.small	1	Variable	2 GiB	EBS Only	$0.023 per Hour
+

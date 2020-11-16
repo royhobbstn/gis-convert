@@ -8,6 +8,7 @@
     "@testing-library/user-event": "^12.1.10",
     "axios": "^0.21.0",
     "config": "^3.3.2",
+    "helmet": "^4.2.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-scripts": "4.0.0",
@@ -21,13 +22,18 @@
     "server-prod": "NODE_ENV=production AWS_PROFILE=admin nodemon --ignore 'logfiles/' --ignore 'tempGeoFiles/' node server/index.js",
     "built-dev": "npm run build && NODE_ENV=development AWS_PROFILE=admin node server/index.js",
     "built-prod": "npm run build && NODE_ENV=production AWS_PROFILE=admin node server/index.js",
+    "dev": "NODE_ENV=development AWS_PROFILE=admin node server/index.js",
+    "prod": "NODE_ENV=production AWS_PROFILE=admin node server/index.js",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "rebuild-container": "sudo docker build --no-cache -t gis-convert .",
+    "build-container": "sudo docker build -t gis-convert .",
+    "push-ecr": "sudo docker login --username AWS --password `aws ecr get-login-password --region us-east-2` 000009394762.dkr.ecr.us-east-2.amazonaws.com && sudo docker tag gis-convert:latest 000009394762.dkr.ecr.us-east-2.amazonaws.com/gis-convert:latest && sudo docker push 000009394762.dkr.ecr.us-east-2.amazonaws.com/gis-convert:latest",
     "loc": "scc --avg-wage 130000 --by-file --exclude-dir build --exclude-dir node_modules --include-ext js ."
   },
-  "proxy": "http://localhost:4000",
+  "proxy": "http://localhost:8080",
   "nodemonConfig": {
     "ignore": [
       "src/*",
@@ -65,6 +71,7 @@
     "nodemon": "^2.0.6",
     "prettier": "^2.1.2",
     "stream": "0.0.2",
+    "uuid": "^8.3.1",
     "winston": "^3.3.3"
   }
 }

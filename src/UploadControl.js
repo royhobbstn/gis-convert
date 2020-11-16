@@ -25,8 +25,8 @@ export function UploadControl({ updateData }) {
     if (!file || !file.name) {
       return false;
     }
-    if (file.size > 10e6) {
-      alert('File exceeds 10 MB limit.');
+    if (file.size > 50e6) {
+      alert('File exceeds 50 MB limit.');
       return false;
     }
 
