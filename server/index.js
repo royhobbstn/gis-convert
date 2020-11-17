@@ -252,17 +252,27 @@ app.post('/initiateConversion', async (req, res) => {
   return res.status(200).json({ sessionData });
 });
 
-// const privateKey = fs.readFileSync('sslcert/server.key', 'utf8');
-// const certificate = fs.readFileSync('sslcert/server.crt', 'utf8');
+if (process.env.NODE_ENV === 'development') {
+  const httpServer = http.createServer(app);
+  httpServer.listen(8080, () => {
+    console.log(`Example app listening at http://localhost:8080`);
+  });
+} else if (process.env.NODE_ENV === 'production') {
+  const privateKey = fs.readFileSync('/etc/letsencrypt/live/convert-geo.com/privkey.pem', 'utf8');
+  const certificate = fs.readFileSync('/etc/letsencrypt/live/convert-geo.com/cert.pem', 'utf8');
+  const ca = fs.readFileSync('/etc/letsencrypt/live/convert-geo.com/chain.pem', 'utf8');
 
-// const credentials = { key: privateKey, cert: certificate };
+  const credentials = {
+    key: privateKey,
+    cert: certificate,
+    ca: ca,
+  };
 
-const httpServer = http.createServer(app);
-//  httpsServer = https.createServer(credentials, app);
+  httpsServer = https.createServer(credentials, app);
 
-httpServer.listen(8080, () => {
-  console.log(`Example app listening at http://localhost:8080`);
-});
-// httpsServer.listen(8443, () => {
-//   console.log(`Example app listening at http://localhost:8443`);
-// });
+  httpsServer.listen(8443, () => {
+    console.log(`Example app listening at http://localhost:8443`);
+  });
+} else {
+  throw new Error('Please specify environment!');
+}
