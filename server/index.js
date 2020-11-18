@@ -231,6 +231,7 @@ app.post('/initiateConversion', async (req, res) => {
   const typeValue = req.body.typeValue;
   const uploadRow = req.body.uploadRow;
   const session_id = req.body.sessionId;
+  const projection = req.body.projection;
 
   const unique_id = uuid();
   const record = {
@@ -252,7 +253,7 @@ app.post('/initiateConversion', async (req, res) => {
     await putDynamoRecord(TABLE, record);
     await sendSQS(
       QUEUE,
-      { session_id, unique_id, key: uploadRow.data.key, typeValue },
+      { session_id, unique_id, key: uploadRow.data.key, typeValue, projection },
       messageTypes.CONVERT,
     );
     sessionData = await sessionIdQuery(TABLE, session_id);

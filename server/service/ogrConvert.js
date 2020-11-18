@@ -3,7 +3,7 @@ const mkdirp = require('mkdirp');
 const spawn = require('child_process').spawn;
 const { ogrDrivers } = require('../lookup/ogrDrivers.js');
 
-exports.convertUsingOgr = (ctx, workingFolder, likelyFile, key, typeValue) => {
+exports.convertUsingOgr = (ctx, workingFolder, likelyFile, key, typeValue, projection) => {
   const ext = lookupExt(typeValue);
   const convert = lookupDesc(typeValue);
   const plainKey = uuid().slice(0, 6) + key.slice(6).replace('.zip', '');
@@ -22,9 +22,14 @@ exports.convertUsingOgr = (ctx, workingFolder, likelyFile, key, typeValue) => {
   ctx.log.info('outputPath', { outputPath });
   ctx.log.info('zipPath', { zipPath });
 
+  const projStr = [];
+  if (projection) {
+    projStr.push('-t_srs', projection);
+  }
+
   return new Promise((resolve, reject) => {
     const application = 'ogr2ogr';
-    const args = ['-f', typeValue, outputPath, likelyFile];
+    const args = [...projStr, '-f', typeValue, outputPath, likelyFile];
 
     const command = `${application} ${args.join(' ')}`;
     ctx.log.info(`running: ${command}`);

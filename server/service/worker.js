@@ -64,6 +64,7 @@ async function processGeoFileConversion(ctx, workingFolder, body) {
     likelyFile,
     key,
     body.typeValue,
+    body.projection,
   );
 
   zipDirectory(ctx, workingFolder, outputFolder, zipPath);

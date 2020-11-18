@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import './lib/storage.js';
 import { UploadsTable } from './UploadsTable';
 import { ProductsTable } from './ProductsTable';
 import { UploadControl } from './UploadControl';

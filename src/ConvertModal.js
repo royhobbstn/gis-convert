@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Dropdown, Button, Icon } from 'semantic-ui-react';
+import { Modal, Dropdown, Button, Icon, Checkbox } from 'semantic-ui-react';
 import { ogrDrivers } from './lookup/ogrDrivers';
 import axios from 'axios';
 
@@ -11,6 +11,7 @@ export function ConvertModal({
 }) {
   const [spinnerIsVisible, updateSpinnerIsVisibile] = useState(false);
   const [typeValue, updateTypeValue] = useState('');
+  const [shouldWgs84, updateShouldWgs84] = useState(true);
 
   async function runConversion() {
     updateSpinnerIsVisibile(true);
@@ -20,6 +21,7 @@ export function ConvertModal({
         typeValue,
         uploadRow: convertModalInfo,
         sessionId: window.localStorage.sessionId,
+        projection: shouldWgs84 ? 'EPSG:4326' : '',
       });
 
       updateData(response.data.sessionData.Items);
@@ -56,6 +58,12 @@ export function ConvertModal({
           placeholder="Convert To Type:"
           options={ogrDrivers}
           value={typeValue}
+        />
+        <br />
+        <Checkbox
+          label="Convert to WGS-84"
+          checked={shouldWgs84}
+          onClick={() => updateShouldWgs84(!shouldWgs84)}
         />
         <br />
       </Modal.Content>
