@@ -1,8 +1,9 @@
 import React, { useRef, useEffect } from 'react';
 import axios from 'axios';
 import { Button } from 'semantic-ui-react';
+import uuid from 'uuid/v4';
 
-export function UploadControl({ updateData }) {
+export function UploadControl({ updateData, clearSessionButton }) {
   const fileUpload = useRef(null);
 
   useEffect(() => {
@@ -19,6 +20,11 @@ export function UploadControl({ updateData }) {
     }
     fetchDynamoData();
   }, [updateData]);
+
+  function clearSession() {
+    window.localStorage.setItem('sessionId', uuid());
+    updateData([]);
+  }
 
   function chooseFile(evt) {
     let file = evt.target.files[0];
@@ -49,7 +55,7 @@ export function UploadControl({ updateData }) {
 
   return (
     <div style={{ margin: '20px 0 10px 0' }}>
-      <Button
+      <div
         style={{
           marginLeft: 'auto',
           marginRight: 'auto',
@@ -58,12 +64,22 @@ export function UploadControl({ updateData }) {
           textAlign: 'center',
           display: 'block',
         }}
-        primary
-        content="Choose File to Upload"
-        labelPosition="left"
-        icon="file"
-        onClick={() => fileUpload.current.click()}
-      />
+      >
+        <Button
+          primary
+          content="Choose File to Upload"
+          labelPosition="left"
+          icon="file"
+          onClick={() => fileUpload.current.click()}
+        />
+        {clearSessionButton ? (
+          <Button
+            style={{ marginLeft: '30px' }}
+            content="Clear Session"
+            onClick={() => clearSession()}
+          />
+        ) : null}
+      </div>
       <input ref={fileUpload} type="file" hidden onChange={chooseFile} />
     </div>
   );

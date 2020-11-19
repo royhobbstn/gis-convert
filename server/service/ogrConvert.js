@@ -24,7 +24,7 @@ exports.convertUsingOgr = (ctx, workingFolder, likelyFile, key, typeValue, proje
 
   const projStr = [];
   if (projection) {
-    projStr.push('-t_srs', projection);
+    projStr.push('-t_srs', 'EPSG:' + projection);
   }
 
   return new Promise((resolve, reject) => {

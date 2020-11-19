@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Dropdown, Button, Icon, Checkbox } from 'semantic-ui-react';
+import { Modal, Dropdown, Button, Icon, Radio, Input } from 'semantic-ui-react';
 import { ogrDrivers } from './lookup/ogrDrivers';
 import axios from 'axios';
 
@@ -11,7 +11,29 @@ export function ConvertModal({
 }) {
   const [spinnerIsVisible, updateSpinnerIsVisibile] = useState(false);
   const [typeValue, updateTypeValue] = useState('');
-  const [shouldWgs84, updateShouldWgs84] = useState(true);
+  const [radioValue, updateRadioValue] = useState('1');
+  const [epsg, updateEpsg] = useState('');
+  const [projError, updateProjError] = useState(false);
+
+  function validateProjInput(textValue, radioValue) {
+    if (radioValue !== '3') {
+      updateProjError(false);
+      return;
+    }
+    if (textValue.length !== 4) {
+      updateProjError(true);
+      return;
+    }
+
+    const strArr = textValue.split('');
+    for (let char of strArr) {
+      if (!['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].includes(char)) {
+        updateProjError(true);
+        return;
+      }
+    }
+    updateProjError(false);
+  }
 
   async function runConversion() {
     updateSpinnerIsVisibile(true);
@@ -21,7 +43,7 @@ export function ConvertModal({
         typeValue,
         uploadRow: convertModalInfo,
         sessionId: window.localStorage.sessionId,
-        projection: shouldWgs84 ? 'EPSG:4326' : '',
+        projection: getProjection(epsg, radioValue),
       });
 
       updateData(response.data.sessionData.Items);
@@ -60,10 +82,50 @@ export function ConvertModal({
           value={typeValue}
         />
         <br />
-        <Checkbox
-          label="Convert to WGS-84"
-          checked={shouldWgs84}
-          onClick={() => updateShouldWgs84(!shouldWgs84)}
+        <Radio
+          style={{ padding: '5px 0' }}
+          label="Keep Original Projection"
+          name="radioGroup"
+          value="1"
+          checked={radioValue === '1'}
+          onChange={() => {
+            validateProjInput(epsg, '1');
+            updateRadioValue('1');
+          }}
+        />
+        <br />
+        <Radio
+          style={{ padding: '5px 0' }}
+          label="WGS84"
+          name="radioGroup"
+          value="2"
+          checked={radioValue === '2'}
+          onChange={() => {
+            validateProjInput(epsg, '2');
+            updateRadioValue('2');
+          }}
+        />
+        <br />
+        <Radio
+          label="EPSG: "
+          name="radioGroup"
+          value="3"
+          checked={radioValue === '3'}
+          onChange={() => {
+            validateProjInput(epsg, '3');
+            updateRadioValue('3');
+          }}
+        />
+        <Input
+          size="mini"
+          style={{ marginLeft: '10px', width: '60px' }}
+          error={projError}
+          value={epsg}
+          onChange={evt => {
+            console.log(evt.target.value);
+            validateProjInput(evt.target.value, radioValue);
+            updateEpsg(evt.target.value);
+          }}
         />
         <br />
       </Modal.Content>
@@ -76,7 +138,7 @@ export function ConvertModal({
             name="spinner"
           />
         ) : (
-          <Button color="green" onClick={() => runConversion()}>
+          <Button color="green" disabled={projError || !typeValue} onClick={() => runConversion()}>
             <Icon name="checkmark" /> Run
           </Button>
         )}
@@ -86,3 +148,15 @@ export function ConvertModal({
 }
 
 export default ConvertModal;
+
+function getProjection(epsg, radioValue) {
+  if (radioValue === '1') {
+    return '';
+  }
+  if (radioValue === '2') {
+    return '4326';
+  }
+  if (radioValue === '3') {
+    return epsg;
+  }
+}

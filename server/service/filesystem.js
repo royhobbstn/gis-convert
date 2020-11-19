@@ -3,6 +3,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const del = require('del');
 const mkdirp = require('mkdirp');
+const { v4: uuid } = require('uuid');
 
 exports.extractZip = (ctx, workingFolder, key) => {
   try {
@@ -26,7 +27,8 @@ exports.zipDirectory = (ctx, navigateTo, outputRoot, zipPath) => {
   }
 };
 
-exports.collapseUnzippedDir = (ctx, workingFolder) => {
+exports.collapseUnzippedDir = collapseUnzippedDir;
+function collapseUnzippedDir(ctx, workingFolder) {
   const arrayOfFiles = fs.readdirSync(workingFolder);
   let movedFlag = false;
 
@@ -53,7 +55,7 @@ exports.collapseUnzippedDir = (ctx, workingFolder) => {
     return collapseUnzippedDir(ctx, workingFolder);
   }
   ctx.log.info('done collapsing');
-};
+}
 
 exports.cleanDirectory = async function (dir) {
   // not using ctx here on purpose
