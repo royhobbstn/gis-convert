@@ -9,7 +9,7 @@ sudo $(aws ecr get-login --no-include-email --region us-east-2)
 
 sudo docker pull 000009394762.dkr.ecr.us-east-2.amazonaws.com/gis-convert:latest
 
-sudo docker run --name gis-convert -v /etc/letsencrypt/live/convert-geo.com:/etc/letsencrypt/live/convert-geo.com:ro -v /etc/letsencrypt/archive/convert-geo.com:/etc/letsencrypt/archive/convert-geo.com:ro -p 443:8443 -p 80:8080 -d -v $HOME/.aws/credentials:/root/.aws/credentials:ro 000009394762.dkr.ecr.us-east-2.amazonaws.com/gis-convert:latest
+sudo docker run --restart unless-stopped --name gis-convert -v /etc/letsencrypt/live/convert-geo.com:/etc/letsencrypt/live/convert-geo.com:ro -v /etc/letsencrypt/archive/convert-geo.com:/etc/letsencrypt/archive/convert-geo.com:ro -p 443:8443 -p 80:8080 -d -v $HOME/.aws/credentials:/root/.aws/credentials:ro 000009394762.dkr.ecr.us-east-2.amazonaws.com/gis-convert:latest
 
 t2.small	1	Variable	2 GiB	EBS Only	$0.023 per Hour
 
