@@ -28,6 +28,7 @@ const {
   getUniqueLogfileName,
   refreshLogfile,
 } = require('./service/logger');
+const { sendAlertMail } = require('./service/email');
 const helmet = require('helmet');
 
 const app = express();
@@ -39,6 +40,14 @@ const LOGS_BUCKET = config.get('Buckets.logsBucket');
 app.use(bodyParser.json());
 app.use(express.static('build'));
 app.use(helmet());
+
+process.on('uncaughtException', async function (err) {
+  console.log(err);
+  await sendAlertMail(
+    `Convert-Geo Error`,
+    JSON.stringify({ err: err.message, stack: err.stack }, null, '\t'),
+  );
+});
 
 if (process.env.NODE_ENV === 'production') {
   app.use(function (req, res, next) {
