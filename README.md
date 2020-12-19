@@ -2,7 +2,9 @@
 
 https://convert-geo.com/
 
-![Application Interface](img/app_capture.jpg)
+| ![Application Interface](img/app_capture.jpg) |
+| --------------------------------------------- |
+
 
 This is a thin user interface around the powerful ogrinfo and ogr2ogr commands.
 
