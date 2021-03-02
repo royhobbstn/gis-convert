@@ -15,3 +15,7 @@ t2.small	1	Variable	2 GiB	EBS Only	$0.023 per Hour
 
 
 
+Renew Cert:
+sudo docker stop gis-convert
+sudo certbot renew
+sudo docker start gis-convert
